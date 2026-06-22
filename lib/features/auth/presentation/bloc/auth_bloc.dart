@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talentintel_ai/features/auth/domain/entities/user.dart';
 import 'package:talentintel_ai/features/auth/domain/usecases/login_usecase.dart';
+import 'package:talentintel_ai/features/auth/domain/usecases/forgot_password_usecase.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Events
@@ -28,6 +29,41 @@ class LoginRequested extends AuthEvent {
 
   @override
   List<Object?> get props => [email, password, role];
+}
+
+/// Fired when the user requests a password reset OTP.
+class ForgotPasswordRequested extends AuthEvent {
+  final String email;
+
+  const ForgotPasswordRequested({required this.email});
+
+  @override
+  List<Object?> get props => [email];
+}
+
+/// Fired when the user submits the OTP code.
+class VerifyOtpRequested extends AuthEvent {
+  final String email;
+  final String otp;
+
+  const VerifyOtpRequested({required this.email, required this.otp});
+
+  @override
+  List<Object?> get props => [email, otp];
+}
+
+/// Fired when the user submits a new password.
+class ResetPasswordRequested extends AuthEvent {
+  final String email;
+  final String newPassword;
+
+  const ResetPasswordRequested({
+    required this.email,
+    required this.newPassword,
+  });
+
+  @override
+  List<Object?> get props => [email, newPassword];
 }
 
 /// Fired when the user taps Logout.
@@ -77,21 +113,55 @@ class AuthError extends AuthState {
   List<Object?> get props => [message];
 }
 
+/// OTP has been sent to the user's email.
+class AuthOtpSent extends AuthState {
+  final String email;
+
+  const AuthOtpSent(this.email);
+
+  @override
+  List<Object?> get props => [email];
+}
+
+/// OTP has been verified successfully.
+class AuthOtpVerified extends AuthState {
+  final String email;
+
+  const AuthOtpVerified(this.email);
+
+  @override
+  List<Object?> get props => [email];
+}
+
+/// Password has been reset successfully.
+class AuthPasswordReset extends AuthState {
+  const AuthPasswordReset();
+}
+
 // ═══════════════════════════════════════════════════════════════
 // BLoC
 // ═══════════════════════════════════════════════════════════════
 
 /// Manages authentication state across the entire app.
 ///
-/// Listens for [LoginRequested], [LogoutRequested], and [AuthCheckRequested]
-/// events and emits the corresponding state.
+/// Listens for [LoginRequested],
+/// [ForgotPasswordRequested], [VerifyOtpRequested],
+/// [ResetPasswordRequested], [LogoutRequested], and
+/// [AuthCheckRequested] events and emits the corresponding state.
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase _loginUseCase;
+  final ForgotPasswordUseCase _forgotPasswordUseCase;
 
-  AuthBloc({required LoginUseCase loginUseCase})
-      : _loginUseCase = loginUseCase,
+  AuthBloc({
+    required LoginUseCase loginUseCase,
+    required ForgotPasswordUseCase forgotPasswordUseCase,
+  })  : _loginUseCase = loginUseCase,
+        _forgotPasswordUseCase = forgotPasswordUseCase,
         super(const AuthInitial()) {
     on<LoginRequested>(_onLoginRequested);
+    on<ForgotPasswordRequested>(_onForgotPasswordRequested);
+    on<VerifyOtpRequested>(_onVerifyOtpRequested);
+    on<ResetPasswordRequested>(_onResetPasswordRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<AuthCheckRequested>(_onAuthCheckRequested);
   }
@@ -108,6 +178,55 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         role: event.role,
       );
       emit(AuthAuthenticated(user));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  Future<void> _onForgotPasswordRequested(
+    ForgotPasswordRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+    try {
+      await _forgotPasswordUseCase.sendOtp(email: event.email);
+      emit(AuthOtpSent(event.email));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  Future<void> _onVerifyOtpRequested(
+    VerifyOtpRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+    try {
+      final isValid = await _forgotPasswordUseCase.verifyOtp(
+        email: event.email,
+        otp: event.otp,
+      );
+      if (isValid) {
+        emit(AuthOtpVerified(event.email));
+      } else {
+        emit(const AuthError('Invalid verification code. Try 1234.'));
+      }
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  Future<void> _onResetPasswordRequested(
+    ResetPasswordRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+    try {
+      await _forgotPasswordUseCase.resetPassword(
+        email: event.email,
+        newPassword: event.newPassword,
+      );
+      emit(const AuthPasswordReset());
     } catch (e) {
       emit(AuthError(e.toString()));
     }

@@ -1,8 +1,9 @@
 import 'package:get_it/get_it.dart';
-import 'package:talentintel_ai/features/auth/data/datasources/auth_local_datasource.dart';
+import 'package:talentintel_ai/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:talentintel_ai/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:talentintel_ai/features/auth/domain/repositories/auth_repository.dart';
 import 'package:talentintel_ai/features/auth/domain/usecases/login_usecase.dart';
+import 'package:talentintel_ai/features/auth/domain/usecases/forgot_password_usecase.dart';
 import 'package:talentintel_ai/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:talentintel_ai/features/hrd_dashboard/data/repositories/dashboard_repository_impl.dart';
 import 'package:talentintel_ai/features/hrd_dashboard/domain/repositories/dashboard_repository.dart';
@@ -19,17 +20,21 @@ final sl = GetIt.instance;
 
 void initDependencies() {
   // ── Auth ──────────────────────────────────────────────────
-  sl.registerLazySingleton(() => AuthLocalDataSource());
+  sl.registerLazySingleton(() => AuthRemoteDataSource());
 
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(sl<AuthLocalDataSource>()),
+    () => AuthRepositoryImpl(sl<AuthRemoteDataSource>()),
   );
 
   sl.registerLazySingleton(() => LoginUseCase(sl<AuthRepository>()));
+  sl.registerLazySingleton(() => ForgotPasswordUseCase(sl<AuthRepository>()));
 
   // AuthBloc is a factory — each creation gets a fresh instance.
   sl.registerFactory(
-    () => AuthBloc(loginUseCase: sl<LoginUseCase>()),
+    () => AuthBloc(
+      loginUseCase: sl<LoginUseCase>(),
+      forgotPasswordUseCase: sl<ForgotPasswordUseCase>(),
+    ),
   );
 
   // ── HRD Dashboard ────────────────────────────────────────

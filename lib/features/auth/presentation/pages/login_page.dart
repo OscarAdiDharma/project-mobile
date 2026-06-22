@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
 import 'package:talentintel_ai/features/auth/domain/entities/user.dart';
@@ -185,7 +186,7 @@ class _LoginPageState extends State<LoginPage> {
                                 ],
                               ),
                               TextButton(
-                                onPressed: () {},
+                                onPressed: () => context.go('/forgot-password'),
                                 child: const Text(
                                   AppStrings.forgotPassword,
                                   style: TextStyle(

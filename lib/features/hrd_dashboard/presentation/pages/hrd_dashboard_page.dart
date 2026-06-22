@@ -335,7 +335,11 @@ class HrdDashboardPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              // Navigate to NCF insights tab on the employee shell, or
+              // show a detailed recommendations dialog.
+              _showRecommendationsDialog(context);
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.white,
               foregroundColor: AppColors.primaryBlue,
@@ -343,6 +347,185 @@ class HrdDashboardPage extends StatelessWidget {
             child: const Text('View Recommendations'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showRecommendationsDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (context, scrollController) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: ListView(
+            controller: scrollController,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.auto_awesome,
+                      color: AppColors.primaryBlue, size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    'AI Recommendations',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Based on NCF pattern analysis and latest performance data',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 20),
+
+              _recommendationTile(
+                context,
+                icon: Icons.trending_up_rounded,
+                color: AppColors.success,
+                title: 'IT Department Improvement',
+                subtitle:
+                    'The IT Department shows a 12% productivity improvement trend. '
+                    'Recommend maintaining current workload and training schedule.',
+                priority: 'HIGH',
+              ),
+              const SizedBox(height: 12),
+              _recommendationTile(
+                context,
+                icon: Icons.star_rounded,
+                color: AppColors.warning,
+                title: 'Promotion Candidates',
+                subtitle:
+                    '5 candidates in the Sales department have high potential '
+                    'for quarterly promotion based on consistent performance above 90%.',
+                priority: 'MEDIUM',
+              ),
+              const SizedBox(height: 12),
+              _recommendationTile(
+                context,
+                icon: Icons.school_rounded,
+                color: AppColors.primaryBlue,
+                title: 'Training Recommendation',
+                subtitle:
+                    'Finance team members would benefit from advanced data analytics '
+                    'training to improve their KPI scores by an estimated 8-15%.',
+                priority: 'MEDIUM',
+              ),
+              const SizedBox(height: 12),
+              _recommendationTile(
+                context,
+                icon: Icons.warning_amber_rounded,
+                color: AppColors.error,
+                title: 'Attention Required',
+                subtitle:
+                    '3 employees in Operations have shown declining performance '
+                    'over the last 2 months. Schedule one-on-one reviews.',
+                priority: 'URGENT',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _recommendationTile(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required String priority,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: priority == 'URGENT'
+                              ? AppColors.error.withValues(alpha: 0.1)
+                              : priority == 'HIGH'
+                                  ? AppColors.success.withValues(alpha: 0.1)
+                                  : AppColors.warning.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          priority,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: priority == 'URGENT'
+                                ? AppColors.error
+                                : priority == 'HIGH'
+                                    ? AppColors.success
+                                    : AppColors.warning,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

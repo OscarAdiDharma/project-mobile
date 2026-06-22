@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
 import 'package:talentintel_ai/core/widgets/section_header.dart';
@@ -22,8 +23,16 @@ class _DatasetManagementPageState extends State<DatasetManagementPage> {
   int _pipelineStep = 0; // 0 = not started, 1-4 = steps
   bool _autoValidation = true;
   bool _dataEncryption = true;
+  String? _pickedFileName;
+  String? _pickedFileSize;
 
   void _startProcessing() {
+    if (_pickedFileName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please pick a file first')),
+      );
+      return;
+    }
     setState(() => _pipelineStep = 1);
     // Simulate pipeline progression
     Future.delayed(const Duration(seconds: 1), () {
@@ -35,6 +44,50 @@ class _DatasetManagementPageState extends State<DatasetManagementPage> {
     Future.delayed(const Duration(seconds: 4), () {
       if (mounted) setState(() => _pipelineStep = 4);
     });
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv', 'xlsx', 'xls'],
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        setState(() {
+          _pickedFileName = file.name;
+          _pickedFileSize = _formatFileSize(file.size);
+          _pipelineStep = 0; // Reset pipeline for new file
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('File selected: ${file.name}'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking file: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes >= 1048576) {
+      return '${(bytes / 1048576).toStringAsFixed(1)} MB';
+    } else if (bytes >= 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '$bytes B';
   }
 
   @override
@@ -101,19 +154,16 @@ class _DatasetManagementPageState extends State<DatasetManagementPage> {
   Widget _buildUploadArea(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: () {
-          // In a real app, this would open a file picker
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('File picker would open here')),
-          );
-        },
+        onTap: _pickFile,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
           decoration: BoxDecoration(
             border: Border.all(
-              color: AppColors.primaryBlue.withValues(alpha: 0.3),
+              color: _pickedFileName != null
+                  ? AppColors.success.withValues(alpha: 0.5)
+                  : AppColors.primaryBlue.withValues(alpha: 0.3),
               width: 2,
               strokeAlign: BorderSide.strokeAlignInside,
             ),
@@ -122,25 +172,42 @@ class _DatasetManagementPageState extends State<DatasetManagementPage> {
           child: Column(
             children: [
               Icon(
-                Icons.cloud_upload_outlined,
+                _pickedFileName != null
+                    ? Icons.check_circle_rounded
+                    : Icons.cloud_upload_outlined,
                 size: 48,
-                color: AppColors.primaryBlue.withValues(alpha: 0.6),
+                color: _pickedFileName != null
+                    ? AppColors.success
+                    : AppColors.primaryBlue.withValues(alpha: 0.6),
               ),
               const SizedBox(height: 12),
               Text(
-                AppStrings.dragDropHint,
-                style: Theme.of(context).textTheme.titleMedium,
+                _pickedFileName != null
+                    ? _pickedFileName!
+                    : AppStrings.dragDropHint,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: _pickedFileName != null
+                          ? AppColors.success
+                          : null,
+                    ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
               Text(
-                AppStrings.fileFormatHint,
+                _pickedFileName != null
+                    ? 'File size: $_pickedFileSize'
+                    : AppStrings.fileFormatHint,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: _pickFile,
                 icon: const Icon(Icons.folder_open_rounded, size: 18),
-                label: const Text(AppStrings.pickFile),
+                label: Text(
+                  _pickedFileName != null
+                      ? 'Change File'
+                      : AppStrings.pickFile,
+                ),
               ),
             ],
           ),

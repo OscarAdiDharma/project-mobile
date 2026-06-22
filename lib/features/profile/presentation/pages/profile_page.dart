@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
 import 'package:talentintel_ai/core/widgets/section_header.dart';
+import 'package:talentintel_ai/features/profile/presentation/pages/edit_profile_page.dart';
+import 'package:talentintel_ai/features/profile/presentation/pages/security_page.dart';
+import 'package:talentintel_ai/features/profile/presentation/pages/help_page.dart';
 
 /// Employee profile & trophy room page.
 ///
@@ -75,9 +78,30 @@ class ProfilePage extends StatelessWidget {
         const SizedBox(height: 28),
 
         // ── Menu Items ─────────────────────────────────
-        _menuItem(context, Icons.person_outline, AppStrings.editProfile),
-        _menuItem(context, Icons.shield_outlined, AppStrings.security),
-        _menuItem(context, Icons.help_outline_rounded, AppStrings.help),
+        _menuItem(
+          context,
+          Icons.person_outline,
+          AppStrings.editProfile,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const EditProfilePage()),
+          ),
+        ),
+        _menuItem(
+          context,
+          Icons.shield_outlined,
+          AppStrings.security,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const SecurityPage()),
+          ),
+        ),
+        _menuItem(
+          context,
+          Icons.help_outline_rounded,
+          AppStrings.help,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const HelpPage()),
+          ),
+        ),
         const SizedBox(height: 16),
 
         // ── Logout ─────────────────────────────────────
@@ -173,7 +197,8 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _menuItem(BuildContext context, IconData icon, String label) {
+  Widget _menuItem(BuildContext context, IconData icon, String label,
+      {VoidCallback? onTap}) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -183,7 +208,7 @@ class ProfilePage extends StatelessWidget {
           Icons.chevron_right_rounded,
           color: AppColors.textSecondary,
         ),
-        onTap: () {},
+        onTap: onTap ?? () {},
       ),
     );
   }

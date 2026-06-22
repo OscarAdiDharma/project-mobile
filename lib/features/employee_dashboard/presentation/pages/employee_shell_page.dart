@@ -7,6 +7,7 @@ import 'package:talentintel_ai/features/employee_dashboard/presentation/bloc/per
 import 'package:talentintel_ai/features/employee_dashboard/presentation/pages/performance_hub_page.dart';
 import 'package:talentintel_ai/features/ncf_insights/presentation/pages/ncf_insights_page.dart';
 import 'package:talentintel_ai/features/profile/presentation/pages/profile_page.dart';
+import 'package:talentintel_ai/features/employee_dashboard/presentation/pages/performance_history_page.dart';
 import 'package:talentintel_ai/injection.dart';
 
 /// Shell page for the Employee portal.
@@ -95,29 +96,7 @@ class _EmployeeShellPageState extends State<EmployeeShellPage> {
       case 1:
         return const NcfInsightsPage();
       case 2:
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.history_rounded,
-                  size: 64, color: AppColors.textHint),
-              const SizedBox(height: 16),
-              Text(
-                'Performance History',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Your historical performance data will appear here.',
-                style: TextStyle(color: AppColors.textHint),
-              ),
-            ],
-          ),
-        );
+        return const PerformanceHistoryPage();
       case 3:
         return ProfilePage(
           onLogout: () {

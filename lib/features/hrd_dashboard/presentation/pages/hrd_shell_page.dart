@@ -7,13 +7,14 @@ import 'package:talentintel_ai/features/hrd_dashboard/presentation/bloc/dashboar
 import 'package:talentintel_ai/features/hrd_dashboard/presentation/pages/hrd_dashboard_page.dart';
 import 'package:talentintel_ai/features/dataset_management/presentation/pages/dataset_management_page.dart';
 import 'package:talentintel_ai/features/employee_analysis/presentation/pages/employee_detail_page.dart';
+import 'package:talentintel_ai/features/hrd_dashboard/presentation/pages/create_employee_page.dart';
+import 'package:talentintel_ai/features/hrd_dashboard/presentation/pages/settings_page.dart';
 import 'package:talentintel_ai/injection.dart';
 
 /// Shell page for the HRD portal.
 ///
-/// Contains a bottom navigation bar with three tabs:
-/// Dashboard, Datasets, and Leaderboard.
-/// The sidebar from the desktop mockup is adapted to bottom nav for mobile.
+/// Contains a bottom navigation bar with five tabs:
+/// Dashboard, Datasets, Leaderboard, Add Employee, Settings.
 class HrdShellPage extends StatefulWidget {
   const HrdShellPage({super.key});
 
@@ -97,6 +98,10 @@ class _HrdShellPageState extends State<HrdShellPage> {
               label: AppStrings.leaderboard,
             ),
             BottomNavigationBarItem(
+              icon: Icon(Icons.person_add_rounded),
+              label: 'Add Employee',
+            ),
+            BottomNavigationBarItem(
               icon: Icon(Icons.settings_rounded),
               label: AppStrings.settings,
             ),
@@ -115,7 +120,9 @@ class _HrdShellPageState extends State<HrdShellPage> {
       case 2:
         return const EmployeeDetailPage();
       case 3:
-        return const Center(child: Text('Settings'));
+        return const CreateEmployeePage();
+      case 4:
+        return const SettingsPage();
       default:
         return const HrdDashboardPage();
     }
