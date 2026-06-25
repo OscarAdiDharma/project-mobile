@@ -11,11 +11,6 @@ import 'package:talentintel_ai/features/hrd_dashboard/presentation/bloc/dashboar
 import 'package:talentintel_ai/features/employee_dashboard/data/repositories/performance_repository_impl.dart';
 import 'package:talentintel_ai/features/employee_dashboard/domain/repositories/performance_repository.dart';
 import 'package:talentintel_ai/features/employee_dashboard/presentation/bloc/performance_bloc.dart';
-import 'package:http/http.dart' as http;
-import 'package:talentintel_ai/features/ml_evaluation/data/datasources/ml_remote_datasource.dart';
-import 'package:talentintel_ai/features/ml_evaluation/data/repositories/ml_repository_impl.dart';
-import 'package:talentintel_ai/features/ml_evaluation/domain/repositories/ml_repository.dart';
-import 'package:talentintel_ai/features/ml_evaluation/presentation/bloc/ml_evaluation_bloc.dart';
 
 /// Global service locator.
 ///
@@ -58,15 +53,5 @@ void initDependencies() {
 
   sl.registerFactory(
     () => PerformanceBloc(repository: sl<PerformanceRepository>()),
-  );
-
-  // ── ML Evaluation ────────────────────────────────────────
-  sl.registerLazySingleton(() => http.Client());
-  sl.registerLazySingleton(() => MlRemoteDataSource(client: sl<http.Client>()));
-  sl.registerLazySingleton<MlRepository>(
-    () => MlRepositoryImpl(remoteDataSource: sl<MlRemoteDataSource>()),
-  );
-  sl.registerFactory(
-    () => MlEvaluationBloc(repository: sl<MlRepository>()),
   );
 }
