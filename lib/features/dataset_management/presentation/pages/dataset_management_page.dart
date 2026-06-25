@@ -3,6 +3,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
 import 'package:talentintel_ai/core/widgets/section_header.dart';
+import 'dart:convert';
+import 'dart:io' show File, Platform;
+import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:talentintel_ai/core/widgets/status_badge.dart';
 
 /// HRD Dataset Management page.
@@ -25,25 +29,79 @@ class _DatasetManagementPageState extends State<DatasetManagementPage> {
   bool _dataEncryption = true;
   String? _pickedFileName;
   String? _pickedFileSize;
+  String? _pickedFilePath;
 
-  void _startProcessing() {
-    if (_pickedFileName == null) {
+  Future<void> _startProcessing() async {
+    if (_pickedFilePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please pick a file first')),
       );
       return;
     }
+    
     setState(() => _pipelineStep = 1);
-    // Simulate pipeline progression
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) setState(() => _pipelineStep = 2);
-    });
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _pipelineStep = 3);
-    });
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) setState(() => _pipelineStep = 4);
-    });
+    
+    try {
+      // 1. Upload Dataset
+      setState(() => _pipelineStep = 2);
+      
+      String baseUrl = Platform.isAndroid ? 'http://10.0.2.2:5000/api' : 'http://127.0.0.1:5000/api';
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/dataset/upload'));
+      request.files.add(await http.MultipartFile.fromPath('file', _pickedFilePath!));
+      
+      var response = await request.send();
+      if (response.statusCode != 200) {
+        throw Exception('Failed to process dataset. Backend returned ${response.statusCode}');
+      }
+      
+      // 2. Running AI Model
+      setState(() => _pipelineStep = 3);
+      var responseData = await response.stream.bytesToString();
+      var jsonResponse = jsonDecode(responseData);
+      
+      if (jsonResponse['status'] != 'success') {
+        throw Exception(jsonResponse['error'] ?? 'Unknown error');
+      }
+      
+      List<dynamic> predictions = jsonResponse['data'];
+      
+      // 3. Save to Firestore
+      final firestore = FirebaseFirestore.instance;
+      final batch = firestore.batch();
+      
+      for (var pred in predictions) {
+        final docRef = firestore.collection('employees').doc(pred['employee_id']);
+        batch.set(docRef, {
+          'employee_id': pred['employee_id'],
+          'name': pred['name'],
+          'department': pred['department'],
+          'position': pred['position'],
+          'performance_rating': pred['performance_rating'],
+          'overall_score': pred['overall_score'],
+          'status': pred['status'],
+          'probabilities': pred['probabilities'],
+          'updated_at': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+      
+      await batch.commit();
+      
+      // Complete
+      setState(() => _pipelineStep = 4);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data processed and saved to Firestore successfully!'), backgroundColor: AppColors.success),
+        );
+      }
+      
+    } catch (e) {
+      setState(() => _pipelineStep = 0);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    }
   }
 
   Future<void> _pickFile() async {
@@ -58,6 +116,7 @@ class _DatasetManagementPageState extends State<DatasetManagementPage> {
         setState(() {
           _pickedFileName = file.name;
           _pickedFileSize = _formatFileSize(file.size);
+          _pickedFilePath = file.path;
           _pipelineStep = 0; // Reset pipeline for new file
         });
         if (mounted) {

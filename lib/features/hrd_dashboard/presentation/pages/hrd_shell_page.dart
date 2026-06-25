@@ -27,8 +27,10 @@ class _HrdShellPageState extends State<HrdShellPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<DashboardBloc>()..add(const DashboardLoadRequested()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => sl<DashboardBloc>()..add(const DashboardLoadRequested())),
+      ],
       child: Scaffold(
         appBar: AppBar(
           title: Row(
@@ -103,9 +105,10 @@ class _HrdShellPageState extends State<HrdShellPage> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings_rounded),
-              label: AppStrings.settings,
+              label: 'Settings',
             ),
           ],
+          type: BottomNavigationBarType.fixed,
         ),
       ),
     );

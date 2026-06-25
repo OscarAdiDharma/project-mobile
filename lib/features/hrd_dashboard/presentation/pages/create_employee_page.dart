@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
 
@@ -69,33 +70,44 @@ class _CreateEmployeePageState extends State<CreateEmployeePage> {
       final currentUser = FirebaseAuth.instance.currentUser;
       final currentEmail = currentUser?.email;
 
-      // Use Firebase Auth REST API approach:
-      // We create a secondary FirebaseApp to create the user without signing out
-      // the current HRD user.
-      // Alternative simpler approach: create user, store data, then re-login as HRD.
+      // Use a secondary Firebase app to avoid logging out the current HRD user
+      FirebaseApp secondaryApp;
+      try {
+        secondaryApp = Firebase.app('SecondaryApp');
+      } catch (e) {
+        secondaryApp = await Firebase.initializeApp(
+          name: 'SecondaryApp',
+          options: Firebase.app().options,
+        );
+      }
 
-      // Create the employee user
-      final credential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      // Create the employee user using the secondary app
+      final credential = await FirebaseAuth.instanceFor(app: secondaryApp)
+          .createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       final newUserId = credential.user!.uid;
 
-      // Save profile to Firestore
-      await FirebaseFirestore.instance.collection('users').doc(newUserId).set({
+      // Send Email Verification
+      await credential.user!.sendEmailVerification();
+
+      // Save profile to Firestore under 'employees' collection
+      await FirebaseFirestore.instance.collection('employees').doc(employeeId).set({
+        'employee_id': employeeId,
         'name': name,
         'email': email,
         'role': 'employee',
         'department': _selectedDepartment,
-        'employee_id': employeeId,
+        'position': 'Staff', // Default
+        'uid': newUserId,
         'created_at': FieldValue.serverTimestamp(),
         'created_by': currentEmail ?? 'HRD Admin',
-      });
+      }, SetOptions(merge: true));
 
-      // Sign out the newly created user (it auto-signed-in)
-      await FirebaseAuth.instance.signOut();
+      // Sign out from the secondary app to clean up state
+      await FirebaseAuth.instanceFor(app: secondaryApp).signOut();
 
       if (mounted) {
         // Show success dialog
@@ -129,8 +141,8 @@ class _CreateEmployeePageState extends State<CreateEmployeePage> {
                 const SizedBox(height: 8),
                 Text(
                   'Account for $name ($email) has been created successfully.\n\n'
-                  'The employee can now login with their email and the temporary password you set.\n\n'
-                  'Please login again to continue as HRD admin.',
+                  'A verification email has been sent to their active email address.\n\n'
+                  'They can login with their email and the temporary password you set after verifying.',
                   style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                   textAlign: TextAlign.center,
                 ),

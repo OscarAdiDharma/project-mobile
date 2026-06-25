@@ -1,97 +1,97 @@
 import 'package:talentintel_ai/features/hrd_dashboard/domain/entities/dashboard_entities.dart';
 import 'package:talentintel_ai/features/hrd_dashboard/domain/repositories/dashboard_repository.dart';
 
-/// Mock implementation with realistic demo data.
-///
-/// The values here match the numbers shown in the mockup screenshots
-/// so the app looks identical to the design.
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class DashboardRepositoryImpl implements DashboardRepository {
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
   @override
   Future<DashboardStats> getStats() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return const DashboardStats(
-      activeEmployees: 1284,
-      avgPredictionScore: 89.4,
-      exemplaryCandidates: 42,
-      highEligibilityTarget: 91.0,
+    final snapshot = await firestore.collection('employees').get();
+    
+    if (snapshot.docs.isEmpty) {
+      return const DashboardStats(
+        activeEmployees: 0,
+        avgPredictionScore: 0.0,
+        exemplaryCandidates: 0,
+        highEligibilityTarget: 90.0,
+      );
+    }
+
+    int activeEmployees = snapshot.docs.length;
+    double totalScore = 0;
+    int exemplaryCandidates = 0;
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final score = (data['overall_score'] ?? 0.0) as num;
+      totalScore += score.toDouble();
+      
+      final rating = data['performance_rating'] as String?;
+      if (rating == 'High') {
+        exemplaryCandidates++;
+      }
+    }
+
+    double avgPredictionScore = totalScore / activeEmployees;
+
+    return DashboardStats(
+      activeEmployees: activeEmployees,
+      avgPredictionScore: double.parse(avgPredictionScore.toStringAsFixed(1)),
+      exemplaryCandidates: exemplaryCandidates,
+      highEligibilityTarget: 90.0,
     );
   }
 
   @override
   Future<List<EmployeeCandidate>> getTopCandidates() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return const [
-      EmployeeCandidate(
-        id: 'emp-001',
-        name: 'Sarah K.',
-        department: 'IT',
-        position: 'Dept. IT',
-        score: 98.2,
-        status: 'Highly Eligible',
-      ),
-      EmployeeCandidate(
-        id: 'emp-002',
-        name: 'Budi Santoso',
-        department: 'Engineering',
-        position: 'Lead Developer',
-        score: 96.5,
-        status: 'Highly Eligible',
-      ),
-      EmployeeCandidate(
-        id: 'emp-003',
-        name: 'Citra Lestari',
-        department: 'Marketing',
-        position: 'Marketing Specialist',
-        score: 94.8,
-        status: 'Highly Eligible',
-      ),
-      EmployeeCandidate(
-        id: 'emp-004',
-        name: 'Adi Nugroho',
-        department: 'Operations',
-        position: 'Dept. Ops',
-        score: 93.1,
-        status: 'Eligible',
-      ),
-      EmployeeCandidate(
-        id: 'emp-005',
-        name: 'Siska A.',
-        department: 'Sales',
-        position: 'Sales Analyst',
-        score: 91.7,
-        status: 'Eligible',
-      ),
-    ];
+    final snapshot = await firestore
+        .collection('employees')
+        .orderBy('overall_score', descending: true)
+        .limit(5)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return EmployeeCandidate(
+        id: data['employee_id']?.toString() ?? doc.id,
+        name: data['name'] ?? 'Unknown',
+        department: data['department'] ?? 'Unknown',
+        position: data['position'] ?? 'Unknown',
+        score: (data['overall_score'] ?? 0.0 as num).toDouble(),
+        status: data['status'] ?? 'Unknown',
+      );
+    }).toList();
   }
 
   @override
   Future<List<DepartmentPerformance>> getDepartmentPerformance() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return const [
-      DepartmentPerformance(
-        department: 'IT',
-        meetTarget: 45,
-        needsImprovement: 12,
-        belowExpectation: 3,
-      ),
-      DepartmentPerformance(
-        department: 'Sales',
-        meetTarget: 38,
-        needsImprovement: 18,
-        belowExpectation: 6,
-      ),
-      DepartmentPerformance(
-        department: 'Ops',
-        meetTarget: 30,
-        needsImprovement: 15,
-        belowExpectation: 5,
-      ),
-      DepartmentPerformance(
-        department: 'HR',
-        meetTarget: 22,
-        needsImprovement: 8,
-        belowExpectation: 2,
-      ),
-    ];
+    final snapshot = await firestore.collection('employees').get();
+    
+    // Map to group by department
+    // departmentName -> {'High': x, 'Medium': y, 'Low': z}
+    final Map<String, Map<String, int>> deptStats = {};
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final dept = data['department'] as String? ?? 'Unknown';
+      final rating = data['performance_rating'] as String? ?? 'Low';
+      
+      deptStats.putIfAbsent(dept, () => {'High': 0, 'Medium': 0, 'Low': 0});
+      
+      if (rating == 'High') deptStats[dept]!['High'] = deptStats[dept]!['High']! + 1;
+      else if (rating == 'Medium') deptStats[dept]!['Medium'] = deptStats[dept]!['Medium']! + 1;
+      else deptStats[dept]!['Low'] = deptStats[dept]!['Low']! + 1;
+    }
+
+    return deptStats.entries.map((entry) {
+      return DepartmentPerformance(
+        department: entry.key,
+        meetTarget: entry.value['High']!,
+        needsImprovement: entry.value['Medium']!,
+        belowExpectation: entry.value['Low']!,
+      );
+    }).toList();
   }
 }
