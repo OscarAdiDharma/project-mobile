@@ -6,9 +6,10 @@ import 'package:talentintel_ai/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:talentintel_ai/features/hrd_dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:talentintel_ai/features/hrd_dashboard/presentation/pages/hrd_dashboard_page.dart';
 import 'package:talentintel_ai/features/dataset_management/presentation/pages/dataset_management_page.dart';
-import 'package:talentintel_ai/features/employee_analysis/presentation/pages/employee_detail_page.dart';
+
 import 'package:talentintel_ai/features/hrd_dashboard/presentation/pages/create_employee_page.dart';
 import 'package:talentintel_ai/features/hrd_dashboard/presentation/pages/settings_page.dart';
+import 'package:talentintel_ai/features/hrd_dashboard/presentation/pages/leaderboard_page.dart';
 import 'package:talentintel_ai/injection.dart';
 
 /// Shell page for the HRD portal.
@@ -121,7 +122,7 @@ class _HrdShellPageState extends State<HrdShellPage> {
       case 1:
         return const DatasetManagementPage();
       case 2:
-        return const EmployeeDetailPage();
+        return const LeaderboardPage();
       case 3:
         return const CreateEmployeePage();
       case 4:

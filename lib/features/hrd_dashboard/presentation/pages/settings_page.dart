@@ -84,8 +84,8 @@ class _SettingsPageState extends State<SettingsPage> {
               // Toggle theme globally
               final themeMode =
                   val ? ThemeMode.dark : ThemeMode.light;
-              // Use the inherited themeNotifier from the App
-              final notifier = ThemeModeNotifier.of(context);
+              // Use the inherited themeNotifier from the App without establishing a dependency in the callback
+              final notifier = ThemeModeNotifier.read(context);
               if (notifier != null) {
                 notifier.setThemeMode(themeMode);
               }
@@ -240,6 +240,7 @@ class _SettingsPageState extends State<SettingsPage> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
+            key: const ValueKey('settings_logout_button'),
             onPressed: () {
               context.read<AuthBloc>().add(const LogoutRequested());
             },
@@ -382,6 +383,11 @@ class ThemeModeNotifier extends InheritedNotifier<ValueNotifier<ThemeMode>> {
 
   static ThemeModeNotifier? of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<ThemeModeNotifier>();
+  }
+
+  static ThemeModeNotifier? read(BuildContext context) {
+    final element = context.getElementForInheritedWidgetOfExactType<ThemeModeNotifier>();
+    return element?.widget as ThemeModeNotifier?;
   }
 
   void setThemeMode(ThemeMode mode) {

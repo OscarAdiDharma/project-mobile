@@ -49,7 +49,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     final snapshot = await firestore
         .collection('employees')
         .orderBy('overall_score', descending: true)
-        .limit(5)
+        .limit(50)
         .get();
 
     return snapshot.docs.map((doc) {
@@ -80,9 +80,13 @@ class DashboardRepositoryImpl implements DashboardRepository {
       
       deptStats.putIfAbsent(dept, () => {'High': 0, 'Medium': 0, 'Low': 0});
       
-      if (rating == 'High') deptStats[dept]!['High'] = deptStats[dept]!['High']! + 1;
-      else if (rating == 'Medium') deptStats[dept]!['Medium'] = deptStats[dept]!['Medium']! + 1;
-      else deptStats[dept]!['Low'] = deptStats[dept]!['Low']! + 1;
+      if (rating == 'High') {
+        deptStats[dept]!['High'] = deptStats[dept]!['High']! + 1;
+      } else if (rating == 'Medium') {
+        deptStats[dept]!['Medium'] = deptStats[dept]!['Medium']! + 1;
+      } else {
+        deptStats[dept]!['Low'] = deptStats[dept]!['Low']! + 1;
+      }
     }
 
     return deptStats.entries.map((entry) {
@@ -93,5 +97,11 @@ class DashboardRepositoryImpl implements DashboardRepository {
         belowExpectation: entry.value['Low']!,
       );
     }).toList();
+  }
+
+  @override
+  Future<void> deleteEmployee(String id) async {
+    // ID here is the employee_id, which is also the doc ID.
+    await firestore.collection('employees').doc(id).delete();
   }
 }

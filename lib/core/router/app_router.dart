@@ -94,7 +94,10 @@ class AppRouter {
       ),
       GoRoute(
         path: '/employee-detail/:id',
-        builder: (context, state) => const EmployeeDetailPage(),
+        builder: (context, state) {
+          final id = state.pathParameters['id'];
+          return EmployeeDetailPage(employeeId: id);
+        },
       ),
 
       // ── Profile sub-pages (pushed via Navigator.push) ──

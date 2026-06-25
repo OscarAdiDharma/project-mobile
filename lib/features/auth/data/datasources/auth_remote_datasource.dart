@@ -29,10 +29,20 @@ class AuthRemoteDataSource {
         throw Exception('Login failed: User not found.');
       }
 
-      // Fetch user profile from Firestore
-      final doc = await _firestore.collection('users').doc(firebaseUser.uid).get();
+      // Fetch user profile from Firestore: check 'users' first, then 'employees'
+      var doc = await _firestore.collection('users').doc(firebaseUser.uid).get();
+      Map<String, dynamic>? data;
       
-      if (!doc.exists) {
+      if (doc.exists) {
+        data = doc.data();
+      } else {
+        final qs = await _firestore.collection('employees').where('uid', isEqualTo: firebaseUser.uid).limit(1).get();
+        if (qs.docs.isNotEmpty) {
+          data = qs.docs.first.data();
+        }
+      }
+      
+      if (data == null) {
         // Fallback if document doesn't exist (e.g., manually created user without profile)
         return UserModel(
           id: firebaseUser.uid,
@@ -44,7 +54,6 @@ class AuthRemoteDataSource {
         );
       }
 
-      final data = doc.data()!;
       final userRoleStr = data['role'] as String? ?? '';
       
       // Map string from Firestore to enum
@@ -67,6 +76,7 @@ class AuthRemoteDataSource {
         role: userRole,
         department: data['department'] as String? ?? 'Unknown Department',
         employeeId: data['employee_id'] as String? ?? 'EMP-${firebaseUser.uid.substring(0, 5)}',
+        avatarUrl: data['avatarUrl'] as String?,
       );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
@@ -114,10 +124,20 @@ class AuthRemoteDataSource {
     if (firebaseUser == null) return null;
 
     try {
-      final doc = await _firestore.collection('users').doc(firebaseUser.uid).get();
-      if (!doc.exists) return null;
+      var doc = await _firestore.collection('users').doc(firebaseUser.uid).get();
+      Map<String, dynamic>? data;
+      
+      if (doc.exists) {
+        data = doc.data();
+      } else {
+        final qs = await _firestore.collection('employees').where('uid', isEqualTo: firebaseUser.uid).limit(1).get();
+        if (qs.docs.isNotEmpty) {
+          data = qs.docs.first.data();
+        }
+      }
+      
+      if (data == null) return null;
 
-      final data = doc.data()!;
       final userRoleStr = data['role'] as String? ?? '';
       UserRole userRole = userRoleStr.toLowerCase() == 'hrd' ? UserRole.hrd : UserRole.employee;
 
@@ -128,6 +148,7 @@ class AuthRemoteDataSource {
         role: userRole,
         department: data['department'] as String? ?? 'Unknown Department',
         employeeId: data['employee_id'] as String? ?? 'EMP-${firebaseUser.uid.substring(0, 5)}',
+        avatarUrl: data['avatarUrl'] as String?,
       );
     } catch (e) {
       return null;

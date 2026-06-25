@@ -4,7 +4,7 @@ import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
 import 'package:talentintel_ai/core/widgets/section_header.dart';
 import 'dart:convert';
-import 'dart:io' show File, Platform;
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:talentintel_ai/core/widgets/status_badge.dart';

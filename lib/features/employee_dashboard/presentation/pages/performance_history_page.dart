@@ -3,61 +3,76 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:talentintel_ai/features/employee_dashboard/presentation/bloc/performance_bloc.dart';
+
 /// Employee Performance History page.
 ///
 /// Shows monthly performance scores in a chart and a list view.
 class PerformanceHistoryPage extends StatelessWidget {
   const PerformanceHistoryPage({super.key});
 
-  static const _historyData = [
-    _MonthData('Jan', 78, 'Good'),
-    _MonthData('Feb', 82, 'Good'),
-    _MonthData('Mar', 75, 'Average'),
-    _MonthData('Apr', 88, 'Excellent'),
-    _MonthData('May', 91, 'Excellent'),
-    _MonthData('Jun', 85, 'Good'),
-    _MonthData('Jul', 79, 'Good'),
-    _MonthData('Aug', 92, 'Excellent'),
-    _MonthData('Sep', 87, 'Good'),
-    _MonthData('Oct', 94, 'Excellent'),
-    _MonthData('Nov', 89, 'Excellent'),
-    _MonthData('Dec', 93, 'Excellent'),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // ── Header ──
-        Text(
-          AppStrings.performanceHistory,
-          style: Theme.of(context)
-              .textTheme
-              .headlineMedium
-              ?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          AppStrings.performanceHistorySubtitle,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 24),
+    return BlocBuilder<PerformanceBloc, PerformanceState>(
+      builder: (context, state) {
+        if (state.isLoading && state.trend.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-        // ── Overall Stats Row ──
-        Row(
+        final trend = state.trend;
+        if (trend.isEmpty) {
+          return const Center(child: Text('No historical data available.'));
+        }
+
+        // Compute stats
+        double total = 0;
+        double bestScore = 0;
+        String bestMonth = '-';
+        for (var t in trend) {
+          total += t.score;
+          if (t.score > bestScore) {
+            bestScore = t.score;
+            bestMonth = t.month;
+          }
+        }
+        final avgScore = (total / trend.length).toStringAsFixed(1);
+        final trendStr = trend.length >= 2 
+            ? '${trend.last.score >= trend[trend.length - 2].score ? '↑' : '↓'} ${(trend.last.score - trend[trend.length - 2].score).abs().toStringAsFixed(1)}%'
+            : '-';
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
           children: [
-            Expanded(child: _statCard('Average Score', '86.1', Icons.trending_up_rounded, AppColors.success)),
-            const SizedBox(width: 12),
-            Expanded(child: _statCard('Best Month', 'Oct', Icons.emoji_events_rounded, AppColors.warning)),
-            const SizedBox(width: 12),
-            Expanded(child: _statCard('Trend', '↑ 12%', Icons.show_chart_rounded, AppColors.primaryBlue)),
-          ],
-        ),
-        const SizedBox(height: 24),
+            // ── Header ──
+            Text(
+              AppStrings.performanceHistory,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              AppStrings.performanceHistorySubtitle,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 24),
 
-        // ── Performance Trend Chart ──
-        Card(
+            // ── Overall Stats Row ──
+            Row(
+              children: [
+                Expanded(child: _statCard('Average Score', avgScore, Icons.trending_up_rounded, AppColors.success)),
+                const SizedBox(width: 12),
+                Expanded(child: _statCard('Best Month', bestMonth, Icons.emoji_events_rounded, AppColors.warning)),
+                const SizedBox(width: 12),
+                Expanded(child: _statCard('Trend', trendStr, Icons.show_chart_rounded, AppColors.primaryBlue)),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // ── Performance Trend Chart ──
+            Card(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -113,13 +128,13 @@ class PerformanceHistoryPage extends StatelessWidget {
                             reservedSize: 24,
                             getTitlesWidget: (value, meta) {
                               final idx = value.toInt();
-                              if (idx < 0 || idx >= _historyData.length) {
+                              if (idx < 0 || idx >= trend.length) {
                                 return const SizedBox.shrink();
                               }
                               return Padding(
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Text(
-                                  _historyData[idx].month,
+                                  trend[idx].month,
                                   style: const TextStyle(
                                     fontSize: 10,
                                     color: AppColors.textHint,
@@ -139,7 +154,7 @@ class PerformanceHistoryPage extends StatelessWidget {
                       maxY: 100,
                       lineBarsData: [
                         LineChartBarData(
-                          spots: _historyData
+                          spots: trend
                               .asMap()
                               .entries
                               .map((e) => FlSpot(
@@ -184,7 +199,7 @@ class PerformanceHistoryPage extends StatelessWidget {
         // ── Monthly List ──
         Text(
           AppStrings.monthlyScore.toUpperCase(),
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: AppColors.textSecondary,
@@ -192,20 +207,20 @@ class PerformanceHistoryPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        ...List.generate(_historyData.length, (index) {
-          final data = _historyData[_historyData.length - 1 - index];
+        ...List.generate(trend.length, (index) {
+          final data = trend[trend.length - 1 - index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Card(
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: _scoreColor(data.score).withValues(alpha: 0.1),
+                  backgroundColor: _scoreColor(data.score.toInt()).withValues(alpha: 0.1),
                   child: Text(
-                    data.score.toString(),
+                    data.score.toInt().toString(),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: _scoreColor(data.score),
+                      color: _scoreColor(data.score.toInt()),
                     ),
                   ),
                 ),
@@ -216,14 +231,14 @@ class PerformanceHistoryPage extends StatelessWidget {
                       .titleMedium
                       ?.copyWith(fontWeight: FontWeight.w600),
                 ),
-                subtitle: Text(data.rating),
+                subtitle: Text(_getRatingLabel(data.score)),
                 trailing: Icon(
                   data.score >= 85
                       ? Icons.trending_up_rounded
                       : data.score >= 75
                           ? Icons.trending_flat_rounded
                           : Icons.trending_down_rounded,
-                  color: _scoreColor(data.score),
+                  color: _scoreColor(data.score.toInt()),
                 ),
               ),
             ),
@@ -232,6 +247,16 @@ class PerformanceHistoryPage extends StatelessWidget {
         const SizedBox(height: 16),
       ],
     );
+      },
+    );
+  }
+
+  String _getRatingLabel(double score) {
+    if (score >= 90) return 'Excellent';
+    if (score >= 80) return 'Very Good';
+    if (score >= 70) return 'Good';
+    if (score >= 60) return 'Average';
+    return 'Poor';
   }
 
   Color _scoreColor(int score) {
@@ -277,12 +302,4 @@ class PerformanceHistoryPage extends StatelessWidget {
       ),
     );
   }
-}
-
-class _MonthData {
-  final String month;
-  final int score;
-  final String rating;
-
-  const _MonthData(this.month, this.score, this.rating);
 }

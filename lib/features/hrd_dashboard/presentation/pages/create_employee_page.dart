@@ -109,6 +109,9 @@ class _CreateEmployeePageState extends State<CreateEmployeePage> {
       // Sign out from the secondary app to clean up state
       await FirebaseAuth.instanceFor(app: secondaryApp).signOut();
 
+      // Automatically send a password reset email to the new employee
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+
       if (mounted) {
         // Show success dialog
         await showDialog(
@@ -141,8 +144,7 @@ class _CreateEmployeePageState extends State<CreateEmployeePage> {
                 const SizedBox(height: 8),
                 Text(
                   'Account for $name ($email) has been created successfully.\n\n'
-                  'A verification email has been sent to their active email address.\n\n'
-                  'They can login with their email and the temporary password you set after verifying.',
+                  'A password reset email has been sent directly to their email address. They can click the link to set up their own password.',
                   style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                   textAlign: TextAlign.center,
                 ),

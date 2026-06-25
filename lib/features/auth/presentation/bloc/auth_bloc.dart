@@ -76,6 +76,15 @@ class AuthCheckRequested extends AuthEvent {
   const AuthCheckRequested();
 }
 
+/// Fired when the user's profile is updated locally.
+class AuthUserUpdated extends AuthEvent {
+  final User updatedUser;
+  const AuthUserUpdated(this.updatedUser);
+
+  @override
+  List<Object?> get props => [updatedUser];
+}
+
 // ═══════════════════════════════════════════════════════════════
 // States
 // ═══════════════════════════════════════════════════════════════
@@ -164,6 +173,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<ResetPasswordRequested>(_onResetPasswordRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<AuthCheckRequested>(_onAuthCheckRequested);
+    on<AuthUserUpdated>(_onAuthUserUpdated);
   }
 
   Future<void> _onLoginRequested(
@@ -246,5 +256,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // On app start, check if there's a cached session.
     // For now, always start at login.
     emit(const AuthInitial());
+  }
+
+  Future<void> _onAuthUserUpdated(
+    AuthUserUpdated event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (state is AuthAuthenticated) {
+      emit(AuthAuthenticated(event.updatedUser));
+    }
   }
 }

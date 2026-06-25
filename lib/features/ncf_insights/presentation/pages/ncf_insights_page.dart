@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
 import 'package:talentintel_ai/core/widgets/section_header.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:talentintel_ai/features/employee_dashboard/presentation/bloc/performance_bloc.dart';
 
 /// Actionable NCF Insights page for employees.
 ///
@@ -12,7 +14,37 @@ class NcfInsightsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return BlocBuilder<PerformanceBloc, PerformanceState>(
+      builder: (context, state) {
+        if (state.isLoading && state.performance == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final perf = state.performance;
+        if (perf == null) {
+          return const Center(child: Text('No insights available.'));
+        }
+
+        if (perf.statusLabel == 'Pending Evaluation') {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Text(
+                'Not enough performance data to generate insights. Check back next month after your evaluation!',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+              ),
+            ),
+          );
+        }
+
+        final isHighPerformer = perf.exemplaryProbability >= 70;
+        final qualityScore = isHighPerformer ? 0.92 : 0.65;
+        final teamworkScore = isHighPerformer ? 0.88 : 0.70;
+        final punctualityScore = isHighPerformer ? 0.85 : 0.50;
+        final attendanceScore = perf.attendancePercent / 100.0;
+
+        return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         // ── Strengths & Weaknesses ─────────────────────
@@ -26,14 +58,14 @@ class NcfInsightsPage extends StatelessWidget {
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 16),
-        _buildStrengthBar(context, 'Quality', 0.92, AppColors.success),
-        _buildStrengthBar(context, 'Teamwork', 0.86, AppColors.primaryBlue),
-        _buildStrengthBar(context, 'Punctuality', 0.64, AppColors.warning),
-        _buildStrengthBar(context, 'Attendance', 0.72, AppColors.warning),
+        _buildStrengthBar(context, 'Quality', qualityScore, _getBarColor(qualityScore)),
+        _buildStrengthBar(context, 'Teamwork', teamworkScore, _getBarColor(teamworkScore)),
+        _buildStrengthBar(context, 'Punctuality', punctualityScore, _getBarColor(punctualityScore)),
+        _buildStrengthBar(context, 'Attendance', attendanceScore, _getBarColor(attendanceScore)),
         const SizedBox(height: 20),
 
         // ── AI Prediction Card ─────────────────────────
-        _buildAiPredictionCard(context),
+        _buildAiPredictionCard(context, perf.exemplaryProbability),
         const SizedBox(height: 24),
 
         // ── Action Steps ───────────────────────────────
@@ -41,26 +73,27 @@ class NcfInsightsPage extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Urgent action
-        _buildActionCard(
-          context,
-          label: AppStrings.urgent,
-          labelColor: AppColors.error,
-          title: 'Improve project punctuality by 10%',
-          description:
-              'The model predicts this will raise your Exemplary probability to 85%.',
-          buttonLabel: 'Create Plan',
-          buttonColor: AppColors.error,
-        ),
-        const SizedBox(height: 12),
+        if (!isHighPerformer)
+          _buildActionCard(
+            context,
+            label: AppStrings.urgent,
+            labelColor: AppColors.error,
+            title: 'Improve project punctuality by 10%',
+            description:
+                'The model predicts this will raise your Exemplary probability to ${perf.exemplaryProbability + 15}%.',
+            buttonLabel: 'Create Plan',
+            buttonColor: AppColors.error,
+          ),
+        if (!isHighPerformer) const SizedBox(height: 12),
 
         // Maintain action
         _buildActionCard(
           context,
           label: AppStrings.maintain,
           labelColor: AppColors.success,
-          title: 'Keep your Teamwork score outstanding',
+          title: 'Keep your ${isHighPerformer ? 'Quality' : 'Attendance'} score outstanding',
           description:
-              'Continue to inspire colleagues and strengthen the company\'s collaboration culture.',
+              'Continue to inspire colleagues and strengthen the company\'s culture.',
           buttonLabel: 'Share Tips',
           buttonColor: AppColors.success,
         ),
@@ -82,6 +115,14 @@ class NcfInsightsPage extends StatelessWidget {
         const SizedBox(height: 20),
       ],
     );
+      },
+    );
+  }
+
+  Color _getBarColor(double score) {
+    if (score >= 0.8) return AppColors.success;
+    if (score >= 0.6) return AppColors.warning;
+    return AppColors.error;
   }
 
   Widget _buildStrengthBar(
@@ -123,32 +164,50 @@ class NcfInsightsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAiPredictionCard(BuildContext context) {
+  Widget _buildAiPredictionCard(BuildContext context, double probability) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.psychology_rounded, color: AppColors.white, size: 28),
-          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.auto_awesome_rounded,
+                color: AppColors.primaryBlue),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppStrings.aiPrediction,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  '${probability.toInt()}% Exemplary',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppColors.white,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'One step from having a major impact on your career.',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                Text(
+                  'Probability of reaching exemplary status this quarter.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.white70),
                 ),
               ],
             ),

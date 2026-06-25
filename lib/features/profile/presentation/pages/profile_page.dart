@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
 import 'package:talentintel_ai/core/widgets/section_header.dart';
-import 'package:talentintel_ai/features/profile/presentation/pages/edit_profile_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:talentintel_ai/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:talentintel_ai/features/profile/presentation/pages/security_page.dart';
 import 'package:talentintel_ai/features/profile/presentation/pages/help_page.dart';
+import 'package:talentintel_ai/features/profile/presentation/pages/edit_profile_page.dart';
 
 /// Employee profile & trophy room page.
 ///
@@ -16,56 +18,61 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // ── Profile Header ─────────────────────────────
-        Center(
-          child: Column(
-            children: [
-              const CircleAvatar(
-                radius: 48,
-                backgroundColor: AppColors.lightBlue,
-                child: Icon(
-                  Icons.person_rounded,
-                  size: 48,
-                  color: AppColors.primaryBlue,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Budi Santoso',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryBlue,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'EMP-0824',
-                  style: TextStyle(
-                    color: AppColors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        if (authState is! AuthAuthenticated) return const SizedBox();
+        final user = authState.user;
+        
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // ── Profile Header ─────────────────────────────
+            Center(
+              child: Column(
+                children: [
+                  const CircleAvatar(
+                    radius: 48,
+                    backgroundColor: AppColors.lightBlue,
+                    child: Icon(
+                      Icons.person_rounded,
+                      size: 48,
+                      color: AppColors.primaryBlue,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  Text(
+                    user.name,
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBlue,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      user.employeeId,
+                      style: const TextStyle(
+                        color: AppColors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    user.department,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Information Technology',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 28),
+            ),
+            const SizedBox(height: 28),
 
         // ── Trophy Room ────────────────────────────────
         SectionHeader(
@@ -121,7 +128,9 @@ class ProfilePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-      ],
+          ],
+        );
+      },
     );
   }
 

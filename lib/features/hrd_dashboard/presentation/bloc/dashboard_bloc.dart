@@ -19,6 +19,15 @@ class DashboardLoadRequested extends DashboardEvent {
   const DashboardLoadRequested();
 }
 
+/// Fired when an employee is deleted.
+class DashboardDeleteEmployeeRequested extends DashboardEvent {
+  final String employeeId;
+  const DashboardDeleteEmployeeRequested(this.employeeId);
+
+  @override
+  List<Object?> get props => [employeeId];
+}
+
 // ═══════════════════════════════════════════════════════════════
 // State
 // ═══════════════════════════════════════════════════════════════
@@ -70,6 +79,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       : _repository = repository,
         super(const DashboardState()) {
     on<DashboardLoadRequested>(_onLoad);
+    on<DashboardDeleteEmployeeRequested>(_onDeleteEmployee);
   }
 
   Future<void> _onLoad(
@@ -93,6 +103,19 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       ));
     } catch (e) {
       emit(state.copyWith(isLoading: false, error: e.toString()));
+    }
+  }
+
+  Future<void> _onDeleteEmployee(
+    DashboardDeleteEmployeeRequested event,
+    Emitter<DashboardState> emit,
+  ) async {
+    try {
+      await _repository.deleteEmployee(event.employeeId);
+      // Reload dashboard after deletion
+      add(const DashboardLoadRequested());
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
     }
   }
 }

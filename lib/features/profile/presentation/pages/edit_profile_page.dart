@@ -1,6 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:talentintel_ai/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:talentintel_ai/features/auth/domain/entities/user.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// Edit Profile page.
 ///
@@ -14,21 +20,58 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  final _nameController = TextEditingController(text: 'Budi Santoso');
-  final _emailController =
-      TextEditingController(text: 'budi@talentintel.com');
-  final _phoneController = TextEditingController(text: '+62 812 3456 7890');
-  String _selectedDepartment = 'Information Technology';
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  late TextEditingController _phoneController;
+  String? _selectedDepartment;
+  String? _avatarUrl;
+  bool _isLoading = false;
 
-  static const _departments = [
+  final List<String> _departments = [
+    'Technology',
     'Human Resources',
-    'Information Technology',
-    'Finance',
     'Marketing',
+    'Finance',
     'Operations',
-    'Research & Development',
-    'Sales',
+    'Product'
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      final user = authState.user;
+      _nameController = TextEditingController(text: user.name);
+      _emailController = TextEditingController(text: user.email);
+      _phoneController = TextEditingController(text: '081234567890'); // mock
+      
+      _selectedDepartment = user.department;
+      // Prevent dropdown crash by ensuring the current department exists in the list
+      if (_selectedDepartment != null && !_departments.contains(_selectedDepartment)) {
+        _departments.add(_selectedDepartment!);
+      }
+      
+      _avatarUrl = user.avatarUrl;
+    } else {
+      _nameController = TextEditingController();
+      _emailController = TextEditingController();
+      _phoneController = TextEditingController();
+      _selectedDepartment = _departments.first;
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      setState(() {
+        _avatarUrl = base64Image;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -38,14 +81,59 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
-  void _onSave() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(AppStrings.profileUpdated),
-        backgroundColor: AppColors.success,
-      ),
-    );
-    Navigator.of(context).pop();
+  Future<void> _onSave() async {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final user = authState.user;
+      await FirebaseFirestore.instance
+          .collection('employees')
+          .doc(user.employeeId)
+          .update({
+        'name': _nameController.text.trim(),
+        'department': _selectedDepartment,
+        'avatarUrl': _avatarUrl,
+      });
+
+      // Dispatch event to update the local AuthBloc state
+      final updatedUser = User(
+        id: user.id,
+        name: _nameController.text.trim(),
+        email: user.email,
+        role: user.role,
+        department: _selectedDepartment ?? user.department,
+        employeeId: user.employeeId,
+        avatarUrl: _avatarUrl,
+      );
+      if (mounted) {
+        context.read<AuthBloc>().add(AuthUserUpdated(updatedUser));
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(AppStrings.profileUpdated),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update profile: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -66,39 +154,31 @@ class _EditProfilePageState extends State<EditProfilePage> {
           Center(
             child: Stack(
               children: [
-                const CircleAvatar(
-                  radius: 56,
-                  backgroundColor: AppColors.lightBlue,
-                  child: Icon(
-                    Icons.person_rounded,
-                    size: 56,
-                    color: AppColors.primaryBlue,
-                  ),
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.1),
+                  backgroundImage: (_avatarUrl != null && _avatarUrl!.startsWith('data:image'))
+                      ? MemoryImage(base64Decode(_avatarUrl!.split(',').last))
+                      : null,
+                  child: (_avatarUrl == null || !_avatarUrl!.startsWith('data:image'))
+                      ? const Icon(Icons.person_rounded, size: 50, color: AppColors.primaryBlue)
+                      : null,
                 ),
                 Positioned(
                   bottom: 0,
                   right: 0,
                   child: GestureDetector(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Photo picker coming soon!'),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-                    },
+                    onTap: _pickImage,
                     child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
                         color: AppColors.primaryBlue,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                            color: AppColors.white, width: 2),
                       ),
                       child: const Icon(
                         Icons.camera_alt_rounded,
                         color: AppColors.white,
-                        size: 18,
+                        size: 20,
                       ),
                     ),
                   ),
@@ -164,9 +244,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
           SizedBox(
             height: 50,
             child: ElevatedButton.icon(
-              onPressed: _onSave,
-              icon: const Icon(Icons.check_circle_outline),
-              label: const Text(AppStrings.saveChanges),
+              onPressed: _isLoading ? null : _onSave,
+              icon: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          color: AppColors.white, strokeWidth: 2))
+                  : const Icon(Icons.check_circle_outline),
+              label: Text(
+                  _isLoading ? 'Saving...' : AppStrings.saveChanges),
             ),
           ),
           const SizedBox(height: 16),

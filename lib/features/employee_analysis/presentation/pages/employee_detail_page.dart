@@ -6,12 +6,15 @@ import 'package:printing/printing.dart';
 import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Employee detail analysis page (viewed by HRD).
 ///
 /// Shows employee profile, radar chart of KPI scores,
 /// individual score cards, and development recommendations.
 class EmployeeDetailPage extends StatelessWidget {
-  const EmployeeDetailPage({super.key});
+  final String? employeeId;
+  const EmployeeDetailPage({super.key, this.employeeId});
 
   @override
   Widget build(BuildContext context) {
@@ -19,78 +22,116 @@ class EmployeeDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(AppStrings.individualAnalysis),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // ── Employee Header ──────────────────────────
-          _buildEmployeeHeader(context),
-          const SizedBox(height: 24),
+      body: employeeId == null
+          ? const Center(child: Text('Invalid Employee ID'))
+          : FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance.collection('employees').doc(employeeId).get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          // ── KPI Radar Chart ─────────────────────────
-          Text(
-            AppStrings.kpiDetails,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Period: Q3 2024',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 16),
-          _buildRadarChart(),
-          const SizedBox(height: 24),
+                if (!snapshot.hasData || !snapshot.data!.exists) {
+                  // Fallback: try searching by employee_id field if doc id doesn't match
+                  return FutureBuilder<QuerySnapshot>(
+                    future: FirebaseFirestore.instance.collection('employees').where('employee_id', isEqualTo: employeeId).limit(1).get(),
+                    builder: (context, qSnapshot) {
+                      if (qSnapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (!qSnapshot.hasData || qSnapshot.data!.docs.isEmpty) {
+                        return const Center(child: Text('Employee not found'));
+                      }
+                      return _buildContent(context, qSnapshot.data!.docs.first);
+                    }
+                  );
+                }
 
-          // ── Score Cards ─────────────────────────────
-          _buildScoreGrid(context),
-          const SizedBox(height: 24),
-
-          // ── Development Recommendations ─────────────
-          Text(
-            AppStrings.developmentRecommendations,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 12),
-          _buildRecommendationCard(
-            context,
-            icon: Icons.schedule_rounded,
-            title: 'Optimize Punctuality',
-            description:
-                'Improve meeting attendance and deadline compliance by 15% '
-                'to raise the overall performance score rapidly.',
-            color: AppColors.warning,
-          ),
-          const SizedBox(height: 12),
-          _buildRecommendationCard(
-            context,
-            icon: Icons.groups_rounded,
-            title: 'Mentorship Program',
-            description:
-                'With a strong Teamwork score, Budi is highly recommended '
-                'to mentor junior developers in the department.',
-            color: AppColors.primaryBlue,
-          ),
-          const SizedBox(height: 24),
-
-          // ── Download PDF ────────────────────────────
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              onPressed: () => _generateAndDownloadPdf(context),
-              icon: const Icon(Icons.picture_as_pdf_rounded),
-              label: const Text(AppStrings.downloadPdf),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-              ),
+                return _buildContent(context, snapshot.data!);
+              },
             ),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
     );
   }
 
-  Future<void> _generateAndDownloadPdf(BuildContext context) async {
+  Widget _buildContent(BuildContext context, DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    final name = data['name'] ?? 'Unknown';
+    final department = data['department'] ?? 'Unknown';
+    final position = data['position'] ?? 'Unknown';
+    final status = data['status'] ?? 'Unknown';
+    final employeeIdStr = data['employee_id']?.toString() ?? doc.id;
+    
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // ── Employee Header ──────────────────────────
+        _buildEmployeeHeader(context, name, department, status),
+        const SizedBox(height: 24),
+
+        // ── KPI Radar Chart ─────────────────────────
+        Text(
+          AppStrings.kpiDetails,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Period: Q3 2024',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 16),
+        _buildRadarChart(),
+        const SizedBox(height: 24),
+
+        // ── Score Cards ─────────────────────────────
+        _buildScoreGrid(context),
+        const SizedBox(height: 24),
+
+        // ── Development Recommendations ─────────────
+        Text(
+          AppStrings.developmentRecommendations,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 12),
+        _buildRecommendationCard(
+          context,
+          icon: Icons.schedule_rounded,
+          title: 'Optimize Punctuality',
+          description:
+              'Improve meeting attendance and deadline compliance by 15% '
+              'to raise the overall performance score rapidly.',
+          color: AppColors.warning,
+        ),
+        const SizedBox(height: 12),
+        _buildRecommendationCard(
+          context,
+          icon: Icons.groups_rounded,
+          title: 'Mentorship Program',
+          description:
+              'With a strong Teamwork score, $name is highly recommended '
+              'to mentor junior developers in the department.',
+          color: AppColors.primaryBlue,
+        ),
+        const SizedBox(height: 24),
+
+        // ── Download PDF ────────────────────────────
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton.icon(
+            onPressed: () => _generateAndDownloadPdf(context, name, department, position, employeeIdStr, status),
+            icon: const Icon(Icons.picture_as_pdf_rounded),
+            label: const Text(AppStrings.downloadPdf),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Future<void> _generateAndDownloadPdf(BuildContext context, String name, String department, String position, String employeeId, String status) async {
     // Show loading indicator
     showDialog(
       context: context,
@@ -162,12 +203,12 @@ class EmployeeDetailPage extends StatelessWidget {
                       style: pw.TextStyle(
                           fontSize: 14, fontWeight: pw.FontWeight.bold)),
                   pw.Divider(),
-                  _pdfInfoRow('Name', 'Budi Santoso'),
-                  _pdfInfoRow('Department', 'Information Technology'),
-                  _pdfInfoRow('Position', 'Senior Software Developer'),
-                  _pdfInfoRow('Employee ID', 'EMP-001'),
+                  _pdfInfoRow('Name', name),
+                  _pdfInfoRow('Department', department),
+                  _pdfInfoRow('Position', position),
+                  _pdfInfoRow('Employee ID', employeeId),
                   _pdfInfoRow('Period', 'Q3 2024'),
-                  _pdfInfoRow('NCF Status', 'Highly Eligible'),
+                  _pdfInfoRow('NCF Status', status),
                 ],
               ),
             ),
@@ -235,7 +276,7 @@ class EmployeeDetailPage extends StatelessWidget {
             pw.SizedBox(height: 8),
             _pdfRecommendation(
               '2. Mentorship Program',
-              'With a strong Teamwork score, Budi is highly recommended '
+              'With a strong Teamwork score, $name is highly recommended '
                   'to mentor junior developers in the department.',
             ),
             pw.SizedBox(height: 24),
@@ -258,7 +299,7 @@ class EmployeeDetailPage extends StatelessWidget {
       // Show print/save dialog
       await Printing.layoutPdf(
         onLayout: (PdfPageFormat format) async => pdf.save(),
-        name: 'Employee_Report_Budi_Santoso.pdf',
+        name: 'Employee_Report_${name.replaceAll(' ', '_')}.pdf',
       );
     } catch (e) {
       if (context.mounted) {
@@ -309,7 +350,7 @@ class EmployeeDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildEmployeeHeader(BuildContext context) {
+  Widget _buildEmployeeHeader(BuildContext context, String name, String department, String status) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -326,14 +367,14 @@ class EmployeeDetailPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Budi Santoso',
+                    name,
                     style: Theme.of(context)
                         .textTheme
                         .titleLarge
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   Text(
-                    'Information Technology',
+                    department,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 4),
@@ -344,9 +385,9 @@ class EmployeeDetailPage extends StatelessWidget {
                       color: AppColors.successLight,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
-                      'NCF: Highly Eligible',
-                      style: TextStyle(
+                    child: Text(
+                      'NCF: $status',
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: AppColors.success,

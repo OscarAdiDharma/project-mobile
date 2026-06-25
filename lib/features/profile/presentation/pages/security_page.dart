@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:talentintel_ai/core/constants/app_colors.dart';
 import 'package:talentintel_ai/core/constants/app_strings.dart';
 
 /// Security page.
 ///
-/// Change password form + Two-factor auth toggle + Login activity.
+/// Change password form.
 class SecurityPage extends StatefulWidget {
   const SecurityPage({super.key});
 
@@ -19,7 +20,7 @@ class _SecurityPageState extends State<SecurityPage> {
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
-  bool _twoFactorEnabled = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -29,7 +30,7 @@ class _SecurityPageState extends State<SecurityPage> {
     super.dispose();
   }
 
-  void _onChangePassword() {
+  Future<void> _onChangePassword() async {
     final current = _currentPwController.text;
     final newPw = _newPwController.text;
     final confirm = _confirmPwController.text;
@@ -49,18 +50,40 @@ class _SecurityPageState extends State<SecurityPage> {
       return;
     }
 
-    _currentPwController.clear();
-    _newPwController.clear();
-    _confirmPwController.clear();
+    setState(() => _isLoading = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && user.email != null) {
+        // Re-authenticate user before changing password
+        final cred = EmailAuthProvider.credential(email: user.email!, password: current);
+        await user.reauthenticateWithCredential(cred);
+        
+        await user.updatePassword(newPw);
+        
+        _currentPwController.clear();
+        _newPwController.clear();
+        _confirmPwController.clear();
 
-    _showSnackBar(AppStrings.passwordChanged, isSuccess: true);
+        _showSnackBar(AppStrings.passwordChanged, isSuccess: true);
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password') {
+        _showSnackBar('Incorrect current password.');
+      } else {
+        _showSnackBar('Failed to change password: ${e.message}');
+      }
+    } catch (e) {
+      _showSnackBar('Error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _showSnackBar(String message, {bool isSuccess = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppColors.success : null,
+        backgroundColor: isSuccess ? AppColors.success : AppColors.error,
       ),
     );
   }
@@ -115,60 +138,16 @@ class _SecurityPageState extends State<SecurityPage> {
                   SizedBox(
                     height: 46,
                     child: ElevatedButton(
-                      onPressed: _onChangePassword,
-                      child: const Text(AppStrings.changePassword),
+                      onPressed: _isLoading ? null : _onChangePassword,
+                      child: _isLoading 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2))
+                        : const Text(AppStrings.changePassword),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 24),
-
-          // ── Two-Factor Auth ──
-          _sectionLabel(AppStrings.twoFactorAuth),
-          const SizedBox(height: 12),
-          Card(
-            child: SwitchListTile(
-              secondary: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.successLight,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.security_rounded,
-                    color: AppColors.success, size: 20),
-              ),
-              title: const Text(AppStrings.twoFactorAuth),
-              subtitle: const Text(AppStrings.twoFactorAuthDesc),
-              value: _twoFactorEnabled,
-              activeThumbColor: AppColors.primaryBlue,
-              onChanged: (val) {
-                setState(() => _twoFactorEnabled = val);
-                _showSnackBar(
-                  '2FA ${val ? 'enabled' : 'disabled'} (demo only)',
-                  isSuccess: val,
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // ── Login Activity ──
-          _sectionLabel(AppStrings.loginActivity),
-          const SizedBox(height: 12),
-          Card(
-            child: Column(
-              children: [
-                _loginEntry('Windows Desktop', 'Today, 15:00', true),
-                const Divider(height: 1),
-                _loginEntry('Android Phone', 'Yesterday, 09:30', false),
-                const Divider(height: 1),
-                _loginEntry('Chrome Browser', 'Jun 20, 14:22', false),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
         ],
       ),
     );
@@ -208,49 +187,12 @@ class _SecurityPageState extends State<SecurityPage> {
   Widget _sectionLabel(String text) {
     return Text(
       text.toUpperCase(),
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w700,
         color: AppColors.textSecondary,
         letterSpacing: 1.2,
       ),
-    );
-  }
-
-  Widget _loginEntry(String device, String time, bool isCurrent) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isCurrent ? AppColors.successLight : AppColors.background,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          isCurrent ? Icons.computer_rounded : Icons.phone_android_rounded,
-          color: isCurrent ? AppColors.success : AppColors.textHint,
-          size: 20,
-        ),
-      ),
-      title: Text(device),
-      subtitle: Text(time),
-      trailing: isCurrent
-          ? Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.successLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'Current',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.success,
-                ),
-              ),
-            )
-          : null,
     );
   }
 }

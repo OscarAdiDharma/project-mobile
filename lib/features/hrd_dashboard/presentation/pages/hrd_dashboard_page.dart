@@ -78,6 +78,8 @@ class HrdDashboardPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 ...state.topCandidates
+                    .take(5)
+                    .toList()
                     .asMap()
                     .entries
                     .map((entry) => _buildCandidateRow(

@@ -1,31 +1,56 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:talentintel_ai/features/employee_dashboard/domain/entities/performance_entities.dart';
 import 'package:talentintel_ai/features/employee_dashboard/domain/repositories/performance_repository.dart';
 
-/// Mock performance data matching the mockup values.
 class PerformanceRepositoryImpl implements PerformanceRepository {
   @override
   Future<EmployeePerformance> getMyPerformance() async {
-    await Future.delayed(const Duration(milliseconds: 400));
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      return _defaultPerformance();
+    }
+
+    final qs = await FirebaseFirestore.instance
+        .collection('employees')
+        .where('uid', isEqualTo: uid)
+        .limit(1)
+        .get();
+
+    if (qs.docs.isEmpty) {
+      return _defaultPerformance();
+    }
+
+    final data = qs.docs.first.data();
+    final score = (data['overall_score'] ?? 0.0 as num).toDouble();
+    final rating = data['performance_rating'] as String? ?? 'No Rating';
+
+    return EmployeePerformance(
+      exemplaryProbability: score,
+      targetThisMonth: 90.0,
+      statusLabel: rating,
+      attendancePercent: 100.0,
+      tasksCompleted: 0,
+      totalTasks: 0,
+    );
+  }
+
+  EmployeePerformance _defaultPerformance() {
     return const EmployeePerformance(
-      exemplaryProbability: 78.0,
-      targetThisMonth: 85.0,
-      statusLabel: 'Very Good',
-      attendancePercent: 98.0,
-      tasksCompleted: 45,
-      totalTasks: 50,
+      exemplaryProbability: 0.0,
+      targetThisMonth: 90.0,
+      statusLabel: 'Pending Evaluation',
+      attendancePercent: 0.0,
+      tasksCompleted: 0,
+      totalTasks: 0,
     );
   }
 
   @override
   Future<List<TrendPoint>> getPerformanceTrend() async {
+    // Currently returns static trend data until historical tracking is implemented in backend
     await Future.delayed(const Duration(milliseconds: 300));
-    return const [
-      TrendPoint(month: 'Jan', score: 65),
-      TrendPoint(month: 'Feb', score: 68),
-      TrendPoint(month: 'Mar', score: 72),
-      TrendPoint(month: 'Apr', score: 70),
-      TrendPoint(month: 'May', score: 75),
-      TrendPoint(month: 'Jun', score: 78),
-    ];
+    // For now, return an empty list if there's no real historical data yet.
+    return const [];
   }
 }

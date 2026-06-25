@@ -5,4 +5,5 @@ abstract class DashboardRepository {
   Future<DashboardStats> getStats();
   Future<List<EmployeeCandidate>> getTopCandidates();
   Future<List<DepartmentPerformance>> getDepartmentPerformance();
+  Future<void> deleteEmployee(String id);
 }
