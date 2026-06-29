@@ -75,7 +75,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
 
     for (var doc in snapshot.docs) {
       final data = doc.data();
-      final dept = data['department'] as String? ?? 'Unknown';
+      // Fallback to employee_id if name is missing
+      final String empName = data['name'] as String? ?? 'Employee ${data['employee_id']}';
+      final String dept = empName;
       final rating = data['performance_rating'] as String? ?? 'Low';
       
       deptStats.putIfAbsent(dept, () => {'High': 0, 'Medium': 0, 'Low': 0});

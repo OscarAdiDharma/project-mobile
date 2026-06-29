@@ -78,7 +78,7 @@ class AppStrings {
   static const String activeEmployees = 'Active Employees';
   static const String avgPredictionScore = 'Avg Prediction Score';
   static const String exemplaryThisMonth = 'Exemplary Candidates This Month';
-  static const String departmentPerformance = 'Performance by Department';
+  static const String departmentPerformance = 'Performance by Employee';
   static const String topCandidates = 'Top 5 Exemplary Candidates';
   static const String viewAll = 'View All';
   static const String aiInsightTitle = 'AI Insight Today';
