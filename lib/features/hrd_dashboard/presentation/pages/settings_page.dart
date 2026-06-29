@@ -16,7 +16,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _darkMode = false;
   bool _pushNotifications = true;
   bool _emailNotifications = true;
 
@@ -29,7 +28,6 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _darkMode = prefs.getBool('dark_mode') ?? false;
       _pushNotifications = prefs.getBool('push_notifications') ?? true;
       _emailNotifications = prefs.getBool('email_notifications') ?? true;
     });
@@ -59,47 +57,6 @@ class _SettingsPageState extends State<SettingsPage> {
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 24),
-
-        // ── Appearance ──
-        _sectionLabel(AppStrings.appearance),
-        const SizedBox(height: 8),
-        Card(
-          child: SwitchListTile(
-            secondary: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.lightBlue,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.dark_mode_rounded,
-                  color: AppColors.primaryBlue, size: 20),
-            ),
-            title: const Text(AppStrings.darkMode),
-            subtitle: const Text(AppStrings.darkModeDesc),
-            value: _darkMode,
-            activeThumbColor: AppColors.primaryBlue,
-            onChanged: (val) {
-              setState(() => _darkMode = val);
-              _savePreference('dark_mode', val);
-              // Toggle theme globally
-              final themeMode =
-                  val ? ThemeMode.dark : ThemeMode.light;
-              // Use the inherited themeNotifier from the App without establishing a dependency in the callback
-              final notifier = ThemeModeNotifier.read(context);
-              if (notifier != null) {
-                notifier.setThemeMode(themeMode);
-              }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                      'Dark mode ${val ? 'enabled' : 'disabled'}'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 20),
 
         // ── Notifications ──
         _sectionLabel(AppStrings.notifications),

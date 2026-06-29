@@ -6,6 +6,8 @@ import 'package:talentintel_ai/core/constants/app_strings.dart';
 import 'package:talentintel_ai/features/auth/domain/entities/user.dart';
 import 'package:talentintel_ai/features/auth/presentation/bloc/auth_bloc.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 /// The login screen matching the mockup design.
 ///
 /// Layout:
@@ -29,6 +31,45 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    _loadRememberMe();
+  }
+
+  Future<void> _loadRememberMe() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedEmail = prefs.getString('remember_email');
+    final savedPassword = prefs.getString('remember_password');
+    final savedRole = prefs.getString('remember_role');
+
+    if (savedEmail != null && savedPassword != null) {
+      setState(() {
+        _emailController.text = savedEmail;
+        _passwordController.text = savedPassword;
+        _rememberMe = true;
+        if (savedRole == 'employee') {
+          _selectedRole = UserRole.employee;
+        } else {
+          _selectedRole = UserRole.hrd;
+        }
+      });
+    }
+  }
+
+  Future<void> _saveRememberMe(String email, String password, UserRole role) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_rememberMe) {
+      await prefs.setString('remember_email', email);
+      await prefs.setString('remember_password', password);
+      await prefs.setString('remember_role', role == UserRole.hrd ? 'hrd' : 'employee');
+    } else {
+      await prefs.remove('remember_email');
+      await prefs.remove('remember_password');
+      await prefs.remove('remember_role');
+    }
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -45,6 +86,8 @@ class _LoginPageState extends State<LoginPage> {
       );
       return;
     }
+
+    _saveRememberMe(email, password, _selectedRole);
 
     context.read<AuthBloc>().add(
           LoginRequested(email: email, password: password, role: _selectedRole),

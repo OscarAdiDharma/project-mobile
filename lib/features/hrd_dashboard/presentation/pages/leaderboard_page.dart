@@ -56,7 +56,7 @@ class LeaderboardPage extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '${candidate.score}%',
+                        '${candidate.score.toStringAsFixed(1)}%',
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,

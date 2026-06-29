@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:talentintel_ai/core/widgets/status_badge.dart';
 
 /// HRD Dataset Management page.
@@ -94,6 +95,28 @@ class _DatasetManagementPageState extends State<DatasetManagementPage> {
       
       await batch.commit();
       
+      // Save to SharedPreferences history
+      final prefs = await SharedPreferences.getInstance();
+      final String? historyStr = prefs.getString('dataset_history');
+      List<dynamic> historyList = [];
+      if (historyStr != null) {
+        try {
+          historyList = jsonDecode(historyStr);
+        } catch (_) {}
+      }
+      
+      final now = DateTime.now();
+      final dateStr = '${now.day} ${_getMonth(now.month)} ${now.year}';
+      
+      historyList.insert(0, {
+        'name': _pickedFileName ?? 'Unknown_Dataset',
+        'date': dateStr,
+        'status': 'Success',
+        'rows': predictions.length,
+      });
+      
+      await prefs.setString('dataset_history', jsonEncode(historyList));
+
       // Complete
       setState(() => _pipelineStep = 4);
       if (mounted) {
@@ -414,57 +437,99 @@ class _DatasetManagementPageState extends State<DatasetManagementPage> {
   }
 
   Widget _buildDatasetList() {
-    final datasets = [
-      _DatasetRow('Employee_KPI_Review_2023.xlsx', '14 Oct 2023', 'Success', 12450),
-      _DatasetRow('Recruitment_Funnel_Q2.csv', '12 Oct 2023', 'Warning', 4200),
-      _DatasetRow('Raw_Survey_Data_Final.csv', '21 Oct 2023', 'Error', 0),
-      _DatasetRow('Attendance_Log_October.xlsx', '19 Oct 2023', 'Success', 15800),
-    ];
+    return FutureBuilder<List<_DatasetRow>>(
+      future: _loadDatasetHistory(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return Column(
-      children: datasets.map((ds) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            leading: Icon(
-              ds.name.endsWith('.csv')
-                  ? Icons.description_rounded
-                  : Icons.table_chart_rounded,
-              color: AppColors.primaryBlue,
+        final datasets = snapshot.data!;
+
+        if (datasets.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text(
+                'No dataset history yet. Run the AI pipeline to see results here.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textHint,
+                    ),
+                textAlign: TextAlign.center,
+              ),
             ),
-            title: Text(
-              ds.name,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              ds.date,
-              style: const TextStyle(fontSize: 11, color: AppColors.textHint),
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (ds.rows > 0)
-                  Text(
-                    '${_formatNumber(ds.rows)} rows',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                  ),
-                const SizedBox(width: 8),
-                StatusBadge(
-                  label: ds.status,
-                  type: ds.status == 'Success'
-                      ? StatusType.success
-                      : ds.status == 'Warning'
-                          ? StatusType.warning
-                          : StatusType.error,
+          );
+        }
+
+        return Column(
+          children: datasets.map((ds) {
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                leading: Icon(
+                  ds.name.endsWith('.csv')
+                      ? Icons.description_rounded
+                      : Icons.table_chart_rounded,
+                  color: AppColors.primaryBlue,
                 ),
-              ],
-            ),
-          ),
+                title: Text(
+                  ds.name,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  ds.date,
+                  style: const TextStyle(fontSize: 11, color: AppColors.textHint),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (ds.rows > 0)
+                      Text(
+                        '${_formatNumber(ds.rows)} rows',
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                    const SizedBox(width: 8),
+                    StatusBadge(
+                      label: ds.status,
+                      type: ds.status == 'Success'
+                          ? StatusType.success
+                          : ds.status == 'Warning'
+                              ? StatusType.warning
+                              : StatusType.error,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
+  }
+
+  Future<List<_DatasetRow>> _loadDatasetHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? historyJson = prefs.getString('dataset_history');
+    if (historyJson == null) return [];
+
+    try {
+      final List<dynamic> list = jsonDecode(historyJson);
+      return list.map((e) => _DatasetRow(
+            e['name'] as String,
+            e['date'] as String,
+            e['status'] as String,
+            e['rows'] as int,
+          )).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  String _getMonth(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1];
   }
 
   String _formatNumber(int number) {

@@ -63,7 +63,7 @@ class HrdDashboardPage extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 12),
-                _buildDepartmentChart(state.departments),
+                _buildDepartmentChart(context, state.departments),
                 const SizedBox(height: 12),
                 _buildChartLegend(),
                 const SizedBox(height: 20),
@@ -140,84 +140,97 @@ class HrdDashboardPage extends StatelessWidget {
   }
 
   /// Horizontal stacked bar chart for department performance.
-  Widget _buildDepartmentChart(List<DepartmentPerformance> departments) {
+  Widget _buildDepartmentChart(BuildContext context, List<DepartmentPerformance> departments) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: SizedBox(
-          height: 200,
-          child: BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: departments
-                  .map((d) => d.total.toDouble())
-                  .reduce((a, b) => a > b ? a : b),
-              barTouchData: BarTouchData(enabled: true),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      final index = value.toInt();
-                      if (index < departments.length) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            departments[index].department,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        );
-                      }
-                      return const SizedBox();
-                    },
+          height: 220, // slightly taller to give room for text
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              // dynamically set width based on number of departments
+              width: departments.length > 4 
+                  ? departments.length * 80.0 
+                  : MediaQuery.of(context).size.width - 64,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY: departments
+                      .map((d) => d.total.toDouble())
+                      .reduce((a, b) => a > b ? a : b),
+                  barTouchData: BarTouchData(enabled: true),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index < departments.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                departments[index].department,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }
+                          return const SizedBox();
+                        },
+                      ),
+                    ),
+                    leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                   ),
-                ),
-                leftTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              gridData: const FlGridData(show: false),
-              borderData: FlBorderData(show: false),
-              barGroups: departments.asMap().entries.map((entry) {
-                final dept = entry.value;
-                return BarChartGroupData(
-                  x: entry.key,
-                  barRods: [
-                    BarChartRodData(
-                      toY: dept.total.toDouble(),
-                      width: 28,
-                      borderRadius: BorderRadius.circular(6),
-                      rodStackItems: [
-                        BarChartRodStackItem(
-                          0,
-                          dept.meetTarget.toDouble(),
-                          AppColors.primaryBlue,
-                        ),
-                        BarChartRodStackItem(
-                          dept.meetTarget.toDouble(),
-                          (dept.meetTarget + dept.needsImprovement).toDouble(),
-                          AppColors.warning,
-                        ),
-                        BarChartRodStackItem(
-                          (dept.meetTarget + dept.needsImprovement).toDouble(),
-                          dept.total.toDouble(),
-                          AppColors.error,
+                  gridData: const FlGridData(show: false),
+                  borderData: FlBorderData(show: false),
+                  barGroups: departments.asMap().entries.map((entry) {
+                    final dept = entry.value;
+                    return BarChartGroupData(
+                      x: entry.key,
+                      barRods: [
+                        BarChartRodData(
+                          toY: dept.total.toDouble(),
+                          width: 28,
+                          borderRadius: BorderRadius.circular(6),
+                          rodStackItems: [
+                            BarChartRodStackItem(
+                              0,
+                              dept.meetTarget.toDouble(),
+                              AppColors.primaryBlue,
+                            ),
+                            BarChartRodStackItem(
+                              dept.meetTarget.toDouble(),
+                              (dept.meetTarget + dept.needsImprovement).toDouble(),
+                              AppColors.warning,
+                            ),
+                            BarChartRodStackItem(
+                              (dept.meetTarget + dept.needsImprovement).toDouble(),
+                              dept.total.toDouble(),
+                              AppColors.error,
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
-                );
-              }).toList(),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
           ),
         ),
@@ -284,7 +297,7 @@ class HrdDashboardPage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '${candidate.score}%',
+              '${candidate.score.toStringAsFixed(1)}%',
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,

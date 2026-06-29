@@ -66,11 +66,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
           if (state is AuthOtpSent) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text(AppStrings.otpSentSuccess),
+                content: Text('Password reset link sent to your email!'),
                 backgroundColor: AppColors.success,
               ),
             );
-            context.go('/otp-verification?email=${state.email}');
+            context.go('/login');
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -128,7 +128,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                AppStrings.forgotPasswordSubtitle,
+                                'Enter your email address and we\'ll send you a link to reset your password.',
                                 style: Theme.of(context).textTheme.bodyMedium,
                                 textAlign: TextAlign.center,
                               ),
@@ -173,8 +173,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                                           : const Icon(Icons.send_rounded),
                                       label: Text(isLoading
                                           ? ''
-                                          : AppStrings
-                                              .sendVerificationCode),
+                                          : 'Send Reset Link'),
                                     ),
                                   );
                                 },

@@ -195,11 +195,18 @@ def upload_dataset():
         # Prepare response
         results = []
         for i in range(len(employee_ids)):
+            emp_id = str(employee_ids[i])
+            
+            # Extract real values if present, else fallback
+            emp_name = str(df.iloc[i]['name']) if 'name' in df.columns else f"Employee {emp_id}"
+            emp_dept = str(df.iloc[i]['department']) if 'department' in df.columns else "Unknown"
+            emp_pos = str(df.iloc[i]['position']) if 'position' in df.columns else "Staff"
+            
             results.append({
-                "employee_id": str(employee_ids[i]),
-                "name": f"Employee {employee_ids[i]}", # Fallback name
-                "department": "Unknown", # Fallback department
-                "position": "Staff", # Fallback position
+                "employee_id": emp_id,
+                "name": emp_name,
+                "department": emp_dept,
+                "position": emp_pos,
                 "performance_rating": predicted_classes[i],
                 "overall_score": float(reg_preds[i][0]),
                 "status": "Highly Eligible" if predicted_classes[i] == 'High' else "Eligible" if predicted_classes[i] == 'Medium' else "Needs Review",
