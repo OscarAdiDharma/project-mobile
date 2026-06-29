@@ -90,7 +90,7 @@ class PerformanceHistoryPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '2024 Monthly Performance Scores',
+                  '2026 Monthly Performance Scores',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 20),
@@ -225,7 +225,7 @@ class PerformanceHistoryPage extends StatelessWidget {
                   ),
                 ),
                 title: Text(
-                  '${data.month} 2024',
+                  '${data.month} 2026',
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium

@@ -74,15 +74,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 28),
 
-        // ── Trophy Room ────────────────────────────────
-        SectionHeader(
-          title: AppStrings.trophyRoom,
-          actionLabel: AppStrings.viewAll,
-          onAction: () {},
-        ),
-        const SizedBox(height: 12),
-        _buildTrophyGrid(context),
-        const SizedBox(height: 28),
+
 
         // ── Menu Items ─────────────────────────────────
         _menuItem(
@@ -134,77 +126,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTrophyGrid(BuildContext context) {
-    final trophies = [
-      _TrophyData('Exemplary Employee', 'Jan 2024', Icons.emoji_events_rounded,
-          true),
-      _TrophyData('Exemplary Employee', 'Mar 2024', Icons.emoji_events_rounded,
-          true),
-      _TrophyData(
-          'Young Innovator', 'Coming Soon', Icons.lightbulb_rounded, false),
-      _TrophyData(
-          'High Achiever', 'Locked', Icons.workspace_premium_rounded, false),
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 1.3,
-      ),
-      itemCount: trophies.length,
-      itemBuilder: (context, index) {
-        final trophy = trophies[index];
-        return Card(
-          color: trophy.isUnlocked
-              ? AppColors.lightBlue
-              : AppColors.background,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  trophy.icon,
-                  size: 32,
-                  color: trophy.isUnlocked
-                      ? AppColors.warning
-                      : AppColors.textHint,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  trophy.title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: trophy.isUnlocked
-                        ? AppColors.textPrimary
-                        : AppColors.textHint,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  trophy.subtitle,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: trophy.isUnlocked
-                        ? AppColors.textSecondary
-                        : AppColors.textHint,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Widget _menuItem(BuildContext context, IconData icon, String label,
       {VoidCallback? onTap}) {
@@ -223,11 +144,4 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-class _TrophyData {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final bool isUnlocked;
 
-  const _TrophyData(this.title, this.subtitle, this.icon, this.isUnlocked);
-}

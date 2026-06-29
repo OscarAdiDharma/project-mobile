@@ -53,10 +53,13 @@ class PerformanceHubPage extends StatelessWidget {
                           .headlineLarge
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
-                    Text(
-                      AppStrings.exemplaryChance,
-                      style: Theme.of(context).textTheme.bodySmall,
-                      textAlign: TextAlign.center,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Text(
+                        AppStrings.exemplaryChance,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ],
                 ),

@@ -99,20 +99,9 @@ class NcfInsightsPage extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Achievement card
-        _buildAchievementCard(context),
-        const SizedBox(height: 24),
-
-        // ── Suggested Training ─────────────────────────
-        const SectionHeader(title: AppStrings.suggestedTraining),
-        const SizedBox(height: 12),
-        _buildTrainingTile(
-          context,
-          title: 'Time Mastery 101',
-          subtitle:
-              'The "Strategic Time Management" course is available for you this month.',
-        ),
-        const SizedBox(height: 20),
+        // Achievement card removed as per user request
+        
+        // Suggested Training removed as per user request
       ],
     );
       },
