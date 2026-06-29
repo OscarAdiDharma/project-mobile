@@ -45,18 +45,26 @@ class _DatasetManagementPageState extends State<DatasetManagementPage> {
       // 1. Upload Dataset
       setState(() => _pipelineStep = 2);
       
-      String baseUrl = Platform.isAndroid ? 'http://10.0.2.2:5000/api' : 'http://127.0.0.1:5000/api';
+      String baseUrl = Platform.isAndroid ? 'http://127.0.0.1:5000/api' : 'http://127.0.0.1:5000/api';
       var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/dataset/upload'));
       request.files.add(await http.MultipartFile.fromPath('file', _pickedFilePath!));
       
       var response = await request.send();
+      var responseData = await response.stream.bytesToString();
+      
       if (response.statusCode != 200) {
-        throw Exception('Failed to process dataset. Backend returned ${response.statusCode}');
+        String errMsg = 'Unknown Error';
+        try {
+          var errJson = jsonDecode(responseData);
+          errMsg = errJson['error'] ?? 'Unknown error';
+        } catch (_) {
+          errMsg = responseData;
+        }
+        throw Exception('Backend Error (400): $errMsg');
       }
       
       // 2. Running AI Model
       setState(() => _pipelineStep = 3);
-      var responseData = await response.stream.bytesToString();
       var jsonResponse = jsonDecode(responseData);
       
       if (jsonResponse['status'] != 'success') {
