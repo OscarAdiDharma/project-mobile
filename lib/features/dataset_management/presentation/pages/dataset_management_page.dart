@@ -80,17 +80,21 @@ class _DatasetManagementPageState extends State<DatasetManagementPage> {
       
       for (var pred in predictions) {
         final docRef = firestore.collection('employees').doc(pred['employee_id']);
-        batch.set(docRef, {
+        
+        Map<String, dynamic> dataToMerge = {
           'employee_id': pred['employee_id'],
-          'name': pred['name'],
-          'department': pred['department'],
-          'position': pred['position'],
           'performance_rating': pred['performance_rating'],
           'overall_score': pred['overall_score'],
           'status': pred['status'],
           'probabilities': pred['probabilities'],
           'updated_at': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        };
+
+        if (pred['name'] != null) dataToMerge['name'] = pred['name'];
+        if (pred['department'] != null) dataToMerge['department'] = pred['department'];
+        if (pred['position'] != null) dataToMerge['position'] = pred['position'];
+
+        batch.set(docRef, dataToMerge, SetOptions(merge: true));
       }
       
       await batch.commit();

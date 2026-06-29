@@ -163,10 +163,19 @@ def upload_dataset():
         df = pd.read_csv(file)
         
         # We need employee_id to track who is who
-        if 'employee_id' not in df.columns:
-            return jsonify({"error": "CSV must contain employee_id column"}), 400
+        emp_id_col = None
+        for col in df.columns:
+            if col.lower() in ['employee_id', 'employee id', 'id_karyawan', 'id', 'employeeid', 'nik', 'nip']:
+                emp_id_col = col
+                break
+                
+        if not emp_id_col:
+            print("=== UPLOADED CSV COLUMNS ===")
+            print(df.columns.tolist())
+            print("============================")
+            return jsonify({"error": f"CSV must contain employee_id column. Found columns: {df.columns.tolist()}"}), 400
             
-        employee_ids = df['employee_id'].tolist()
+        employee_ids = df[emp_id_col].tolist()
         
         # Predict for all using prepare_inference
         from preprocessing.preprocessor import Preprocessor
@@ -197,10 +206,15 @@ def upload_dataset():
         for i in range(len(employee_ids)):
             emp_id = str(employee_ids[i])
             
-            # Extract real values if present, else fallback
-            emp_name = str(df.iloc[i]['name']) if 'name' in df.columns else f"Employee {emp_id}"
-            emp_dept = str(df.iloc[i]['department']) if 'department' in df.columns else "Unknown"
-            emp_pos = str(df.iloc[i]['position']) if 'position' in df.columns else "Staff"
+            def get_val(keys):
+                for key in keys:
+                    if key in df.columns:
+                        return str(df.iloc[i][key])
+                return None
+            
+            emp_name = get_val(['name', 'nama', 'employee_name', 'nama_karyawan'])
+            emp_dept = get_val(['department', 'departemen', 'divisi', 'division'])
+            emp_pos = get_val(['position', 'posisi', 'jabatan', 'role'])
             
             results.append({
                 "employee_id": emp_id,

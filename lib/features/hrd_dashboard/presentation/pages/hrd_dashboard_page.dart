@@ -72,7 +72,7 @@ class HrdDashboardPage extends StatelessWidget {
               // ── Top 5 Candidates ──────────────────────────
               if (state.topCandidates.isNotEmpty) ...[
                 SectionHeader(
-                  title: AppStrings.topCandidates,
+                  title: 'Top ${state.topCandidates.take(5).length} Exemplary Candidates',
                   actionLabel: AppStrings.viewAll,
                   onAction: () {},
                 ),
