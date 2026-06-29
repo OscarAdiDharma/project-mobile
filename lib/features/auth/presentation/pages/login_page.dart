@@ -272,7 +272,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   // ── Footer ──────────────────────────────────
                   Text(
-                    '© 2024 AI Talent Intelligence System. Data Science Edition.',
+                    '© 2026 AI Talent Intelligence System. Data Science Edition.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontSize: 11,
                           color: AppColors.textHint,

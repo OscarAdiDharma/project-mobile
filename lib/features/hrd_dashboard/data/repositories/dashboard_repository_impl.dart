@@ -75,19 +75,20 @@ class DashboardRepositoryImpl implements DashboardRepository {
 
     for (var doc in snapshot.docs) {
       final data = doc.data();
-      // Fallback to employee_id if name is missing
       final String empName = data['name'] as String? ?? 'Employee ${data['employee_id']}';
       final String dept = empName;
       final rating = data['performance_rating'] as String? ?? 'Low';
+      final score = (data['overall_score'] as num?)?.toInt() ?? 0;
       
       deptStats.putIfAbsent(dept, () => {'High': 0, 'Medium': 0, 'Low': 0});
       
+      // Assign the actual score to determine the bar height
       if (rating == 'High') {
-        deptStats[dept]!['High'] = deptStats[dept]!['High']! + 1;
+        deptStats[dept]!['High'] = score;
       } else if (rating == 'Medium') {
-        deptStats[dept]!['Medium'] = deptStats[dept]!['Medium']! + 1;
+        deptStats[dept]!['Medium'] = score;
       } else {
-        deptStats[dept]!['Low'] = deptStats[dept]!['Low']! + 1;
+        deptStats[dept]!['Low'] = score;
       }
     }
 
