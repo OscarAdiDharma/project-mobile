@@ -1,0 +1,65 @@
+@startuml UseCaseDiagram
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #F5F5F5
+  BorderColor #1565C0
+  FontColor #0D1B2A
+}
+skinparam actor {
+  BackgroundColor #1565C0
+  FontColor #FFFFFF
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #42A5F5
+}
+skinparam note {
+  BackgroundColor #FFF9C4
+  BorderColor #FFC107
+}
+
+title Use Case Diagram - Talent Achieve
+
+rectangle "Talent Achieve System" as System {
+
+  usecase "Login" as UC1
+  usecase "Logout" as UC2
+  usecase "Lihat Dashboard\n(Executive Summary)" as UC3
+  usecase "Mengelola Karyawan\n(Create, Read, Delete)" as UC4
+  usecase "Melihat Leaderboard" as UC5
+  usecase "Menganalisis Karyawan\n(Radar Chart, PDF)" as UC6
+  usecase "Mengelola Dataset\n(Upload, AI Pipeline)" as UC7
+  usecase "Mengatur Settings\n(Notification, Dark Mode)" as UC8
+  usecase "Melihat Performance Hub\n(Gauge, Trend)" as UC9
+  usecase "Melihat NCF Insights\n(Strengths, Weaknesses)" as UC10
+  usecase "Melihat Performance History" as UC11
+  usecase "Mengelola Profile\n(Edit, Avatar)" as UC12
+  usecase "Forgot Password\n(OTP, Reset)" as UC13
+}
+
+actor "HRD" as HRD
+actor "Employee" as EMP
+
+HRD --> UC1
+HRD --> UC2
+HRD --> UC3
+HRD --> UC4
+HRD --> UC5
+HRD --> UC6
+HRD --> UC7
+HRD --> UC8
+HRD --> UC13
+
+EMP --> UC1
+EMP --> UC2
+EMP --> UC9
+EMP --> UC10
+EMP --> UC11
+EMP --> UC12
+EMP --> UC13
+
+UC1 ..> UC13 : <<include>>
+
+@enduml

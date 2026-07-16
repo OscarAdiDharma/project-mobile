@@ -1,0 +1,76 @@
+@startuml ActivityDiagram
+skinparam activity {
+  BackgroundColor #F5F5F5
+  BorderColor #1565C0
+  FontColor #0D1B2A
+  DiamondBackgroundColor #FFF9C4
+  DiamondBorderColor #FFC107
+}
+skinparam arrow {
+  Color #42A5F5
+}
+
+title Activity Diagram - Alur Autentikasi Login
+
+start
+
+:User membuka aplikasi;
+
+:Splash Screen
+(Tampilan logo Talent Achieve);
+
+:Login Screen muncul;
+
+:User memasukkan
+email, password, dan role;
+
+if (User lupa password?) then (Ya)
+  :Input email untuk reset;
+
+  :Kirim OTP;
+  note right: Kode OTP: 1234
+
+  :Verifikasi OTP;
+
+  :Input password baru;
+
+  :Password berhasil direset;
+  backward :Login Screen;
+
+else (Tidak)
+endif
+
+:Tekan tombol "Sign In";
+
+:Sistem memvalidasi
+kredsensial via
+Firebase Authentication;
+
+if (Kredensial valid?) then (Ya)
+  :Cek role pengguna;
+
+  if (Role = HRD?) then (Ya)
+    :Redirect ke
+    **HRD Dashboard**
+    (Executive Summary);
+  else (Tidak)
+    if (Role = Employee?) then (Ya)
+      :Redirect ke
+      **Employee Dashboard**
+      (Performance Hub);
+    else (Tidak)
+      :Tampilkan error
+      "Role tidak valid";
+      backward :Login Screen;
+    endif
+  endif
+
+else (Tidak)
+  :Tampilkan error message
+  "Email atau password salah";
+  backward :Login Screen;
+endif
+
+stop
+
+@enduml

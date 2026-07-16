@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalentAchieve — Presentasi Project Akhir</title>
+<style>
+  :root{
+    --blue:#1565C0;
+    --blue-bright:#2196F3;
+    --blue-tint:#E3F2FD;
+    --navy:#0F1923;
+    --navy-light:#1A2332;
+    --paper:#F5F7FA;
+    --white:#FFFFFF;
+    --ink:#1A1A2E;
+    --ink-dim:#6B7280;
+    --ink-hint:#9CA3AF;
+    --line:#E0E0E0;
+    --success:#4CAF50;
+    --warning:#FFA726;
+    --error:#EF5350;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--navy);color:var(--ink);font-family:var(--font);overflow:hidden;}
+
+  .deck{position:relative;width:100vw;height:100vh;}
+
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+  }
+  .slide.active{display:block;}
+
+  /* ============ split-panel shell ============ */
+  .split-shell{display:flex;width:100%;height:100%;}
+  .split-shell.reverse{flex-direction:row-reverse;}
+
+  .panel{position:relative;height:100%;overflow:hidden;}
+  .panel-color{
+    flex:0 0 38%;
+    display:flex;flex-direction:column;
+    justify-content:center;
+    padding:6vh 3.4vw;
+    color:var(--white);
+  }
+  .panel-color.tone-blue{background:var(--blue);}
+  .panel-color.tone-navy{background:var(--navy);}
+
+  .panel-white{
+    flex:1;
+    background:var(--white);
+    padding:6vh 4vw;
+    display:flex;flex-direction:column;
+    justify-content:center;
+    overflow-y:auto;
+  }
+
+  /* corner brand chip — persistent across every slide */
+  .corner-chip{
+    position:fixed;top:26px;left:26px;
+    width:40px;height:40px;
+    background:var(--navy);
+    display:flex;align-items:center;justify-content:center;
+    z-index:70;
+    font-weight:800;font-size:.72rem;color:var(--white);
+    letter-spacing:.02em;
+  }
+
+  .dot-grid{
+    position:absolute;top:34px;right:34px;
+    display:grid;grid-template-columns:repeat(2,6px);grid-gap:6px;
+  }
+  .dot-grid span{width:6px;height:6px;background:rgba(255,255,255,.55);}
+
+  .panel-eyebrow{
+    font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:rgba(255,255,255,.65);margin-bottom:18px;
+    opacity:0;transform:translateY(8px);
+  }
+  .panel-headline{
+    font-size:2.6rem;line-height:1.06;font-weight:800;letter-spacing:-.01em;
+    text-transform:uppercase;margin:0;
+    opacity:0;transform:translateY(12px);
+  }
+  .panel-sub{
+    margin-top:18px;font-size:.92rem;line-height:1.6;color:rgba(255,255,255,.72);max-width:320px;
+    opacity:0;transform:translateY(10px);
+  }
+  .panel-foot{
+    position:absolute;bottom:30px;left:3.4vw;
+    font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:rgba(255,255,255,.45);
+  }
+
+  /* circular accent — used selectively, the deck's signature motif */
+  .circle-mark{
+    position:absolute;
+    width:190px;height:190px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .circle-mark.outline{border:2px solid rgba(255,255,255,.35);}
+  .circle-mark.fill-bright{background:var(--blue-bright);}
+  .circle-mark .cm-num{font-size:2.6rem;font-weight:800;color:var(--white);line-height:1;}
+  .circle-mark .cm-label{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.8);margin-top:4px;}
+  .circle-mark img{width:100%;height:100%;object-fit:cover;}
+
+  /* ============ content typography (white panel) ============ */
+  .content-eyebrow{
+    font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--blue);margin-bottom:10px;
+    opacity:0;transform:translateY(8px);
+  }
+  .content-title{
+    font-size:1.7rem;font-weight:800;color:var(--ink);margin:0 0 22px 0;letter-spacing:-.01em;
+    opacity:0;transform:translateY(10px);
+  }
+
+  p.lead{font-size:1rem;color:var(--ink-dim);max-width:640px;line-height:1.65;}
+
+  .fade-block{opacity:0;transform:translateY(10px);}
+
+  /* ============ presenter script / cue card ============ */
+  .script-box{
+    margin-top:18px;
+    background:var(--blue-tint);
+    border-left:3px solid var(--blue);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .script-box .script-label{
+    font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--blue);margin-bottom:6px;
+  }
+  .script-box p{margin:0;font-size:.85rem;line-height:1.6;color:var(--ink);font-style:italic;}
+  .script-box.on-dark{background:rgba(255,255,255,.08);border-left:3px solid var(--blue-bright);}
+  .script-box.on-dark .script-label{color:var(--blue-bright);}
+  .script-box.on-dark p{color:rgba(255,255,255,.82);}
+
+  /* ============ cards (mirrors app's rounded stat cards) ============ */
+  .grid{display:grid;gap:14px;}
+  .grid-2{grid-template-columns:1fr 1fr;}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 20px;
+    box-shadow:0 1px 3px rgba(15,25,35,.06);
+  }
+  .card-label{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;}
+  .card p{margin:0;color:var(--ink-dim);font-size:.86rem;line-height:1.55;}
+
+  .stat{
+    background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 18px;box-shadow:0 1px 3px rgba(15,25,35,.06);
+  }
+  .stat .num{font-size:1.7rem;font-weight:800;color:var(--ink);letter-spacing:-.01em;}
+  .stat .label{margin-top:4px;color:var(--ink-dim);font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;font-weight:600;}
+
+  .badge-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 14px;border-radius:999px;
+    font-size:.76rem;font-weight:700;letter-spacing:.02em;
+    background:var(--blue-tint);color:var(--blue);
+  }
+  .badge-pill.success{background:#E8F5E9;color:var(--success);}
+
+  ul.filelist{list-style:none;margin:0;padding:0;}
+  ul.filelist li{
+    padding:11px 0 11px 26px;position:relative;
+    color:var(--ink-dim);font-size:.92rem;line-height:1.55;
+    border-bottom:1px solid var(--line);
+  }
+  ul.filelist li:last-child{border-bottom:none;}
+  ul.filelist li::before{
+    content:"";position:absolute;left:0;top:17px;
+    width:7px;height:7px;background:var(--blue);border-radius:2px;
+  }
+
+  .figure{border-radius:var(--radius);overflow:hidden;background:#fff;border:1px solid var(--line);box-shadow:0 1px 3px rgba(15,25,35,.06);}
+  .figure img{width:100%;display:block;}
+  .figure-caption{font-size:.72rem;color:var(--ink-dim);padding:10px 14px 12px 14px;font-weight:600;letter-spacing:.01em;}
+
+  .figure-pending{
+    position:relative;border:1.5px dashed var(--line);border-radius:var(--radius);
+    background:var(--paper);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:22px;min-height:200px;
+  }
+  .figure-pending .fp-title{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-hint);}
+  .figure-pending .fp-sub{font-size:.78rem;margin-top:8px;max-width:260px;color:var(--ink-dim);}
+
+  .phone-frame{
+    height:50vh;max-height:420px;
+    border-radius:22px;border:6px solid var(--navy);overflow:hidden;
+    background:#000;margin:0 auto;
+    box-shadow:0 10px 30px rgba(15,25,35,.25);
+  }
+  .phone-frame img{width:100%;height:100%;object-fit:cover;display:block;}
+
+  table.metrics{width:100%;border-collapse:collapse;}
+  table.metrics th,table.metrics td{text-align:left;padding:8px 4px;font-size:.82rem;}
+  table.metrics thead th{border-bottom:2px solid var(--ink);color:var(--ink-dim);font-weight:700;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;}
+  table.metrics tbody tr{border-bottom:1px solid var(--line);}
+  table.metrics td.val{color:var(--success);font-weight:800;text-align:right;}
+
+  .tag-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .tag-row span{
+    font-size:.72rem;font-weight:600;color:var(--ink-dim);
+    border:1px solid var(--line);border-radius:999px;padding:6px 14px;background:var(--white);
+  }
+
+  /* ============ cover / closing (full bleed) ============ */
+  .cover-shell{
+    height:100%;background:var(--navy);color:var(--white);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;position:relative;padding:0 6vw;
+  }
+  .cover-mark{display:flex;align-items:center;gap:14px;margin-bottom:30px;opacity:0;transform:translateY(10px);}
+  .cover-mark img{width:46px;height:46px;border-radius:12px;}
+  .cover-mark .name{font-weight:800;font-size:1.15rem;}
+  .cover-mark .tag{color:rgba(255,255,255,.55);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;}
+  .cover-kicker{
+    font-size:.74rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-bright);
+    margin-bottom:20px;opacity:0;transform:translateY(8px);
+  }
+  .cover-title{
+    font-size:2.6rem;font-weight:800;line-height:1.15;letter-spacing:-.01em;max-width:820px;
+    margin:0 0 18px 0;opacity:0;transform:translateY(12px);
+  }
+  .cover-lead{color:rgba(255,255,255,.62);font-size:1rem;max-width:600px;line-height:1.6;opacity:0;transform:translateY(10px);}
+  .cover-authors{margin-top:26px;color:rgba(255,255,255,.55);font-size:.85rem;line-height:1.7;opacity:0;transform:translateY(10px);}
+  .cover-authors b{color:var(--white);font-weight:700;}
+  .cover-shell .circle-mark{position:absolute;}
+
+  @media (max-width: 980px){
+    .split-shell,.split-shell.reverse{flex-direction:column;}
+    .panel-color{flex:0 0 auto;padding:8vh 6vw 4vh 6vw;}
+    .panel-white{padding:4vh 6vw;overflow-y:auto;}
+    .panel-headline{font-size:1.9rem;}
+    .cover-title{font-size:1.9rem;}
+    .circle-mark{display:none;}
+    .grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}
+  }
+
+  /* ============ footer nav ============ */
+  .progress-fill{position:fixed;bottom:0;left:0;height:3px;background:var(--blue);z-index:80;transition:width .3s ease;}
+  .nav-controls{
+    position:fixed;bottom:20px;right:26px;
+    display:flex;align-items:center;gap:16px;z-index:80;
+  }
+  .counter{font-size:.76rem;color:var(--white);font-weight:600;letter-spacing:.03em;
+    background:rgba(15,25,35,.55);padding:6px 12px;border-radius:999px;backdrop-filter:blur(4px);}
+  .nav-btn{
+    width:36px;height:36px;border-radius:50%;
+    background:rgba(15,25,35,.55);backdrop-filter:blur(4px);
+    border:none;cursor:pointer;color:var(--white);font-size:1rem;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s ease;
+  }
+  .nav-btn:hover{background:var(--blue);}
+  .nav-btn:disabled{opacity:.3;cursor:default;}
+  .nav-btn:disabled:hover{background:rgba(15,25,35,.55);}
+
+  /* ============ entrance animation (one consistent pattern) ============ */
+  .slide.active .panel-eyebrow,
+  .slide.active .content-eyebrow,
+  .slide.active .cover-kicker{animation:riseIn .4s ease forwards;animation-delay:.05s;}
+  .slide.active .panel-headline,
+  .slide.active .content-title,
+  .slide.active .cover-title{animation:riseIn .45s ease forwards;animation-delay:.12s;}
+  .slide.active .panel-sub,
+  .slide.active .cover-lead{animation:riseIn .45s ease forwards;animation-delay:.2s;}
+  .slide.active .cover-mark,
+  .slide.active .cover-authors{animation:riseIn .45s ease forwards;animation-delay:.28s;}
+  .slide.active .fade-block{animation:riseIn .4s ease forwards;animation-delay:.16s;}
+
+  @keyframes riseIn{
+    from{opacity:0;transform:translateY(10px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;opacity:1 !important;transform:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="corner-chip">TA</div>
+<div class="progress-fill" id="progressFill"></div>
+<div class="nav-controls">
+  <div class="counter" id="counter">01 / 14</div>
+  <button class="nav-btn" id="prevBtn" aria-label="Sebelumnya">‹</button>
+  <button class="nav-btn" id="nextBtn" aria-label="Berikutnya">›</button>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: COVER -->
+  <section class="slide active">
+    <div class="cover-shell">
+      <div class="circle-mark outline" style="width:420px;height:420px;top:-140px;right:-120px;"></div>
+      <div class="circle-mark fill-bright" style="width:120px;height:120px;bottom:60px;left:60px;opacity:.9;"></div>
+      <div class="cover-kicker">Project Akhir · Mobile Apps &amp; Technology · 2026</div>
+      <div class="cover-mark">
+        <img src="assets/app_icon.png" alt="logo">
+        <div style="text-align:left;">
+          <div class="name">TalentAchieve</div>
+          <div class="tag">AI Talent Intelligence</div>
+        </div>
+      </div>
+      <h1 class="cover-title">Rekomendasi Karyawan Teladan Berdasarkan KPI dengan Neural Collaborative Filtering Berbasis Mobile</h1>
+      <p class="cover-lead">Aplikasi mobile berbasis AI untuk prediksi dan rekomendasi karyawan teladan menggunakan Neural Collaborative Filtering (NCF).</p>
+      <div class="cover-authors">
+        <b>Berkat Perdana Saragih</b> &nbsp;·&nbsp; <b>Oscar Adi Dharma</b> &nbsp;·&nbsp; <b>Galih Adhi Kusuma</b> &nbsp;·&nbsp; <b>Firschanya Alula Rietmadha</b><br>
+        Department of Informatics Engineering, Esa Unggul University
+      </div>
+      <div class="script-box on-dark fade-block" style="max-width:560px;">
+        <div class="script-label">Naskah Presenter</div>
+        <p>Selamat pagi/siang, perkenalkan kami dari kelompok TalentAchieve. Project ini adalah aplikasi mobile berbasis AI yang membantu HRD dan karyawan mengevaluasi kinerja secara transparan menggunakan model Neural Collaborative Filtering.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2: LATAR BELAKANG -->
+  <section class="slide">
+    <div class="split-shell">
+      <div class="panel panel-color tone-blue">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 01</div>
+        <h2 class="panel-headline">Latar<br>Belakang</h2>
+        <p class="panel-sub">Kesenjangan antara evaluasi kinerja manual dan kebutuhan transparansi karyawan modern.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Masalah</div>
+        <h3 class="content-title">Masalah yang Ingin Diselesaikan</h3>
+        <ul class="filelist fade-block">
+          <li>Evaluasi kinerja karyawan masih dilakukan secara manual dan subjektif</li>
+          <li>Target KPI tidak terukur secara real-time</li>
+          <li>Proses HR lambat dan rentan terhadap bias penilaian</li>
+          <li>Karyawan tidak mengetahui capaian performa secara transparan</li>
+        </ul>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Kami mulai dari masalah nyata di lapangan: evaluasi kinerja karyawan masih manual dan subjektif, sehingga keputusan HR seperti promosi atau reward jadi tidak konsisten dan karyawan tidak tahu progres mereka sendiri.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: TUJUAN -->
+  <section class="slide">
+    <div class="split-shell reverse">
+      <div class="panel panel-color tone-navy">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 02</div>
+        <h2 class="panel-headline">Tujuan<br>Penelitian</h2>
+        <p class="panel-sub">Empat sasaran utama yang membingkai seluruh scope pengembangan sistem.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Sasaran</div>
+        <h3 class="content-title">Apa yang Ingin Dicapai</h3>
+        <div class="grid grid-2 fade-block">
+          <div class="card"><div class="card-label">Aplikasi Mobile</div><p>Membangun aplikasi untuk tracking dan evaluasi KPI yang transparan bagi karyawan dan HRD.</p></div>
+          <div class="card"><div class="card-label">Model NCF</div><p>Mengintegrasikan Neural Collaborative Filtering untuk prediksi dan rekomendasi karyawan teladan.</p></div>
+          <div class="card"><div class="card-label">Dua Dashboard</div><p>Menyediakan dashboard terpisah untuk HRD (monitoring) dan Employee (self-tracking).</p></div>
+          <div class="card"><div class="card-label">Pipeline End-to-End</div><p>Membangun pipeline ML: preprocessing, training, evaluasi, inferensi.</p></div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Dari masalah tadi, kami menetapkan empat tujuan: membangun aplikasi tracking KPI yang transparan, mengintegrasikan model NCF untuk prediksi, menyediakan dashboard terpisah untuk HRD dan karyawan, serta membangun pipeline machine learning yang utuh dari awal sampai akhir.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4: ARSITEKTUR -->
+  <section class="slide">
+    <div class="split-shell">
+      <div class="panel panel-color tone-blue">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 03</div>
+        <h2 class="panel-headline">Arsitektur<br>Sistem</h2>
+        <p class="panel-sub">Tiga layer saling terhubung untuk menghadirkan prediksi performa secara real-time.</p>
+        <div class="circle-mark outline" style="width:140px;height:140px;bottom:-30px;right:-30px;">
+          <div class="cm-num">3</div>
+          <div class="cm-label">Layer</div>
+        </div>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Sistem</div>
+        <h3 class="content-title">Bagaimana Sistem Bekerja</h3>
+        <div class="grid grid-2 fade-block" style="align-items:start;">
+          <div class="figure">
+            <img src="docs/poster_images/architecture.png" alt="Arsitektur Sistem">
+            <div class="figure-caption">Diagram Arsitektur TalentAchieve</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="card"><div class="card-label">Presentation Layer</div><p>Flutter + BLoC — UI responsif</p></div>
+            <div class="card"><div class="card-label">Business Logic Layer</div><p>Repository pattern + Flask REST API + Model NCF</p></div>
+            <div class="card"><div class="card-label">Data Layer</div><p>Firebase Authentication + Cloud Firestore</p></div>
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Secara arsitektur, sistem kami terdiri dari tiga layer: Flutter dengan BLoC di sisi presentasi, Flask REST API yang menjalankan model NCF di sisi business logic, dan Firebase — Authentication serta Firestore — di sisi data.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: METODE -->
+  <section class="slide">
+    <div class="split-shell reverse">
+      <div class="panel panel-color tone-navy">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 04</div>
+        <h2 class="panel-headline">Metode<br>Penelitian</h2>
+        <p class="panel-sub">Dataset, responden, dan metodologi pengembangan yang digunakan.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Metodologi</div>
+        <h3 class="content-title">Dataset &amp; Metodologi</h3>
+        <div class="grid grid-4 fade-block" style="margin-bottom:18px;">
+          <div class="stat"><div class="num">5.000</div><div class="label">Record Dataset</div></div>
+          <div class="stat"><div class="num">24</div><div class="label">Fitur KPI</div></div>
+          <div class="stat"><div class="num">30</div><div class="label">Responden SUS</div></div>
+          <div class="stat"><div class="num">Waterfall</div><div class="label">Metodologi</div></div>
+        </div>
+        <div class="tag-row fade-block">
+          <span>Flutter 3.11.5</span>
+          <span>Python / Flask</span>
+          <span>TensorFlow / Keras</span>
+          <span>Firebase Auth</span>
+          <span>Cloud Firestore</span>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Untuk penelitiannya, kami memakai dataset 5.000 baris dengan 24 fitur KPI, menguji usability ke 30 responden, dan mengembangkan seluruhnya dengan metodologi waterfall menggunakan Flutter, Flask, dan TensorFlow.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 6: MODEL NCF -->
+  <section class="slide">
+    <div class="split-shell">
+      <div class="panel panel-color tone-blue">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 05</div>
+        <h2 class="panel-headline">Model<br>NCF</h2>
+        <p class="panel-sub">Dual output head — klasifikasi dan regresi dari satu representasi bersama.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Neural Collaborative Filtering</div>
+        <h3 class="content-title">Dual Output Head</h3>
+        <div class="grid grid-2 fade-block" style="align-items:start;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="card"><div class="card-label">Input</div><p>24 fitur KPI karyawan</p></div>
+            <div class="card"><div class="card-label">Shared Dense Layers</div><p>128 → 64 → 32 neuron, representasi fitur bersama</p></div>
+            <div class="card"><div class="card-label">Output</div><p><b style="color:var(--ink);">Klasifikasi</b> — softmax 3 kelas (Low/Medium/High)<br><b style="color:var(--ink);">Regresi</b> — linear, skor 0–100</p></div>
+          </div>
+          <div class="figure">
+            <img src="docs/poster_images/architecture.png" alt="NCF Model">
+            <div class="figure-caption">24 Fitur KPI → Klasifikasi + Regresi</div>
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Model NCF ini punya dua output sekaligus dari satu jaringan yang sama: 24 fitur KPI diproses lewat dense layer 128-64-32, lalu keluar sebagai klasifikasi Low/Medium/High dan skor regresi 0 sampai 100.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 7: LOGIN -->
+  <section class="slide">
+    <div class="split-shell reverse">
+      <div class="panel panel-color tone-navy">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 06</div>
+        <h2 class="panel-headline">Hasil<br>Aplikasi</h2>
+        <p class="panel-sub">Autentikasi — titik masuk aplikasi dengan dua peran berbeda.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Autentikasi</div>
+        <h3 class="content-title">Login &amp; Pemilihan Peran</h3>
+        <div class="grid grid-2 fade-block" style="align-items:center;">
+          <div class="phone-frame" style="height:44vh;">
+            <img src="assets/login_1.jpg" alt="Login Screen">
+          </div>
+          <div>
+            <div class="card"><div class="card-label">Dual Role</div><p>Pengguna memilih peran — HRD atau Employee — sebelum login, sehingga dashboard dan hak akses yang tampil menyesuaikan otomatis.</p></div>
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Ini tampilan login aplikasi kami. Pengguna memilih peran terlebih dahulu — HRD atau Employee — sebelum masuk, karena kedua peran punya dashboard dan hak akses yang berbeda.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 8: HRD EXECUTIVE SUMMARY -->
+  <section class="slide">
+    <div class="split-shell">
+      <div class="panel panel-color tone-blue">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 06</div>
+        <h2 class="panel-headline">Hasil<br>Aplikasi</h2>
+        <p class="panel-sub">Per group (HRD) — ringkasan eksekutif seluruh tim dalam satu layar.</p>
+        <div class="circle-mark" style="width:150px;height:150px;bottom:20px;right:-40px;border:3px solid var(--white);">
+          <img src="assets/executive_summary.jpg" alt="Executive Summary">
+        </div>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Per Group · HRD</div>
+        <h3 class="content-title">Executive Summary &amp; Leaderboard</h3>
+        <div class="grid grid-2 fade-block" style="align-items:start;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="card"><div class="card-label">Stat Cards</div><p>Active employees, avg prediction score, dan exemplary candidates ditampilkan real-time.</p></div>
+            <div class="card"><div class="card-label">Leaderboard</div><p>Ranking karyawan berdasarkan skor prediksi NCF, lengkap dengan status badges.</p></div>
+          </div>
+          <div class="phone-frame" style="height:38vh;">
+            <img src="assets/executive_summary.jpg" alt="Executive Summary Screenshot">
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Setelah HRD login, mereka langsung disambut Executive Summary — ringkasan jumlah karyawan aktif, rata-rata skor prediksi, dan jumlah kandidat teladan, lengkap dengan grafik performa per karyawan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 9: DATASET MANAGEMENT -->
+  <section class="slide">
+    <div class="split-shell reverse">
+      <div class="panel panel-color tone-navy">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 06</div>
+        <h2 class="panel-headline">Hasil<br>Aplikasi</h2>
+        <p class="panel-sub">Per group (HRD) — mengunggah data dan menjalankan pipeline AI.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Per Group · HRD</div>
+        <h3 class="content-title">Dataset Management</h3>
+        <div class="grid grid-2 fade-block" style="align-items:center;">
+          <div class="phone-frame" style="height:44vh;">
+            <img src="assets/dataset_management.jpg" alt="Dataset Management">
+          </div>
+          <div>
+            <div class="card"><div class="card-label">Pipeline AI 4 Tahap</div><p>Upload dataset → cleaning &amp; preprocessing → menjalankan model AI → selesai, dengan auto validation dan enkripsi data.</p></div>
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Di menu Dataset Management, HRD bisa mengunggah file CSV atau XLSX berisi data KPI karyawan. Sistem otomatis menjalankan empat tahap pipeline AI: upload, cleaning, menjalankan model, sampai selesai.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 10: EMPLOYEE PERFORMANCE HUB -->
+  <section class="slide">
+    <div class="split-shell">
+      <div class="panel panel-color tone-blue">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 06</div>
+        <h2 class="panel-headline">Hasil<br>Aplikasi</h2>
+        <p class="panel-sub">Per individu (Employee) — memantau progres kinerja sendiri secara real-time.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Per Individu · Employee</div>
+        <h3 class="content-title">Performance Hub</h3>
+        <div class="grid grid-2 fade-block" style="align-items:center;">
+          <div class="phone-frame" style="height:44vh;">
+            <img src="assets/performance_hub.jpg" alt="Performance Hub">
+          </div>
+          <div>
+            <div class="card"><div class="card-label">Circular Gauge</div><p>Menampilkan probabilitas kinerja (Exemplary Employee Probability) dan tren performa 6 bulan terakhir bagi karyawan.</p></div>
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Di sisi karyawan, Performance Hub menampilkan gauge lingkaran yang menunjukkan probabilitas kinerja mereka, beserta tren performa enam bulan terakhir — jadi karyawan bisa memantau progres sendiri secara real-time.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 10b: PERFORMANCE HISTORY -->
+  <section class="slide">
+    <div class="split-shell reverse">
+      <div class="panel panel-color tone-navy">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 06</div>
+        <h2 class="panel-headline">Hasil<br>Aplikasi</h2>
+        <p class="panel-sub">Per individu (Employee) — riwayat skor performa bulanan.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Per Individu · Employee</div>
+        <h3 class="content-title">Performance History</h3>
+        <div class="grid grid-2 fade-block" style="align-items:center;">
+          <div class="phone-frame" style="height:44vh;">
+            <img src="assets/performance_history.jpg" alt="Performance History">
+          </div>
+          <div>
+            <div class="card"><div class="card-label">Riwayat Bulanan</div><p>Average score, best month, dan tren dalam grafik, plus rincian skor per bulan dengan label kualitatif seperti "Very Good".</p></div>
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Selain gauge real-time, karyawan juga bisa membuka Performance History untuk melihat rata-rata skor, bulan terbaik, dan rincian skor tiap bulan — jadi progres jangka panjang tetap terpantau, bukan cuma snapshot hari ini.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 11: NCF INSIGHTS / PERFORMANCE AI -->
+  <section class="slide">
+    <div class="split-shell reverse">
+      <div class="panel panel-color tone-navy">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 06</div>
+        <h2 class="panel-headline">Hasil<br>Aplikasi</h2>
+        <p class="panel-sub">Per individu (Employee) — analisis kekuatan dan kelemahan berbasis AI.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Per Individu · Employee</div>
+        <h3 class="content-title">NCF Insights — Performance AI</h3>
+        <div class="grid grid-2 fade-block" style="align-items:center;">
+          <div class="phone-frame" style="height:44vh;">
+            <img src="assets/performance_ai.jpg" alt="Performance AI - Strengths and Weaknesses">
+          </div>
+          <div>
+            <div class="card"><div class="card-label">Strengths &amp; Weaknesses</div><p>Skor per kompetensi (Quality, Teamwork, Punctuality, Attendance) beserta action steps yang bisa langsung ditindaklanjuti.</p></div>
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Fitur Performance AI ini memberi analisis kekuatan dan kelemahan karyawan berdasarkan empat kompetensi — Quality, Teamwork, Punctuality, Attendance — sekaligus rekomendasi action steps yang bisa langsung ditindaklanjuti.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 12: EMPLOYEE ANALYSIS -->
+  <section class="slide">
+    <div class="split-shell">
+      <div class="panel panel-color tone-blue">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 06</div>
+        <h2 class="panel-headline">Hasil<br>Aplikasi</h2>
+        <p class="panel-sub">Per individu (Employee) — profil KPI 5 dimensi yang bisa diekspor.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Per Individu · Employee</div>
+        <h3 class="content-title">Employee Analysis</h3>
+        <div class="grid grid-2 fade-block" style="align-items:center;">
+          <div class="figure-pending">
+            <div class="fp-title">Figure Pending</div>
+            <div class="fp-sub">Employee Analysis — radar chart 5 dimensi KPI, ekspor PDF</div>
+          </div>
+          <div>
+            <div class="card"><div class="card-label">Radar Chart</div><p>Lima dimensi KPI divisualisasikan sekaligus, hasil analisisnya dapat diekspor langsung ke PDF.</p></div>
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Employee Analysis menyajikan radar chart lima dimensi KPI supaya HRD bisa melihat profil kekuatan setiap karyawan secara visual, dan hasil analisisnya bisa diekspor langsung ke PDF.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 13: HELP CENTER -->
+  <section class="slide">
+    <div class="split-shell reverse">
+      <div class="panel panel-color tone-navy">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 06</div>
+        <h2 class="panel-headline">Hasil<br>Aplikasi</h2>
+        <p class="panel-sub">Dukungan pengguna — FAQ dan kontak bantuan langsung dari aplikasi.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Dukungan Pengguna</div>
+        <h3 class="content-title">Help Center</h3>
+        <div class="grid grid-2 fade-block" style="align-items:center;">
+          <div class="phone-frame" style="height:44vh;">
+            <img src="assets/help_center.jpg" alt="Help Center">
+          </div>
+          <div>
+            <div class="card"><div class="card-label">FAQ &amp; Contact Support</div><p>Pertanyaan umum seputar skor KPI dan prediksi AI, ditambah kontak email dan telepon support.</p></div>
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Kami juga menyediakan Help Center dengan FAQ seputar skor KPI, cara kerja prediksi AI, dan kontak support — supaya pengguna baru tidak kebingungan saat pertama kali memakai aplikasi.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 10: EVALUASI MODEL -->
+  <section class="slide">
+    <div class="split-shell">
+      <div class="panel panel-color tone-blue">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 07</div>
+        <h2 class="panel-headline">Evaluasi<br>Model</h2>
+        <p class="panel-sub">Klasifikasi dan regresi diuji terhadap 750 sampel data test.</p>
+        <div class="circle-mark outline" style="width:130px;height:130px;bottom:-20px;right:-20px;">
+          <div class="cm-num" style="font-size:1.5rem;">99.87%</div>
+          <div class="cm-label">Accuracy</div>
+        </div>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Model NCF</div>
+        <h3 class="content-title">Evaluasi Model NCF</h3>
+        <div class="grid grid-2 fade-block" style="margin-bottom:16px;">
+          <div class="figure">
+            <img src="docs/poster_images/training_curves.png" alt="Training/Validation Loss">
+            <div class="figure-caption">Training &amp; Validation Loss</div>
+          </div>
+          <div class="figure">
+            <img src="docs/poster_images/confusion_matrix.png" alt="Confusion Matrix">
+            <div class="figure-caption">Confusion Matrix</div>
+          </div>
+        </div>
+        <div class="grid grid-2 fade-block">
+          <div class="card">
+            <div class="card-label">Klasifikasi</div>
+            <table class="metrics">
+              <tbody>
+              <tr><td>Accuracy</td><td class="val">99.87%</td></tr>
+              <tr><td>Macro F1</td><td class="val">0.9985</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-label">Regresi</div>
+            <table class="metrics">
+              <tbody>
+              <tr><td>RMSE</td><td class="val">0.8670</td></tr>
+              <tr><td>MAE</td><td class="val">0.6212</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Untuk evaluasi modelnya sendiri, kami menguji dengan 750 sampel data test. Hasilnya, akurasi klasifikasi mencapai 99,87 persen — hanya satu kesalahan prediksi — dengan RMSE regresi sebesar 0,87.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 14: SUS -->
+  <section class="slide">
+    <div class="split-shell reverse">
+      <div class="panel panel-color tone-navy">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 07</div>
+        <h2 class="panel-headline">Evaluasi<br>Usability</h2>
+        <p class="panel-sub">System Usability Scale dari 30 responden pengguna aplikasi.</p>
+        <div class="circle-mark fill-bright" style="width:150px;height:150px;bottom:-20px;right:-20px;">
+          <div class="cm-num">84</div>
+          <div class="cm-label">Grade A</div>
+        </div>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">System Usability Scale</div>
+        <h3 class="content-title">Skor SUS: 84 — Sangat Baik</h3>
+        <div class="grid grid-2 fade-block" style="align-items:center;">
+          <div class="figure">
+            <img src="docs/poster_images/sus_chart.png" alt="SUS Chart">
+            <div class="figure-caption">Distribusi Skor SUS (n=30)</div>
+          </div>
+          <div>
+            <span class="badge-pill success">Grade A · Sangat Baik</span>
+            <p class="lead" style="margin-top:16px;">SUS rata-rata 84 dari 30 responden menunjukkan tingkat kegunaan yang tinggi dan penerimaan pengguna yang kuat. Skor di atas 80 dikategorikan "Sangat Baik".</p>
+          </div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Kami juga mengukur usability lewat System Usability Scale ke 30 responden, dan hasilnya skor rata-rata 84 — masuk kategori Grade A atau "sangat baik" menurut standar interpretasi SUS.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 15: KESIMPULAN -->
+  <section class="slide">
+    <div class="split-shell">
+      <div class="panel panel-color tone-blue">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 08</div>
+        <h2 class="panel-headline">Kesimpulan</h2>
+        <p class="panel-sub">Ringkasan capaian utama dari keseluruhan pengembangan sistem.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Ringkasan</div>
+        <h3 class="content-title">Apa yang Berhasil Dicapai</h3>
+        <ul class="filelist fade-block">
+          <li>Model NCF berhasil diintegrasikan ke mobile app dengan akurasi 99.87% (1 kesalahan dari 750 sampel test)</li>
+          <li>Pipeline ML end-to-end berjalan optimal dari preprocessing hingga inferensi</li>
+          <li>Aplikasi menyediakan evaluasi KPI transparan dan objektif untuk HRD dan karyawan</li>
+          <li>Evaluasi SUS skor 84 (Grade A) menunjukkan usability sangat baik</li>
+        </ul>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Kesimpulannya, model NCF berhasil kami integrasikan ke aplikasi mobile dengan akurasi tinggi, pipeline machine learning berjalan end-to-end, dan aplikasi ini terbukti membantu evaluasi KPI yang transparan bagi HRD maupun karyawan.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 16: SARAN -->
+  <section class="slide">
+    <div class="split-shell reverse">
+      <div class="panel panel-color tone-navy">
+        <div class="dot-grid"><span></span><span></span><span></span><span></span></div>
+        <div class="panel-eyebrow">Bagian 09</div>
+        <h2 class="panel-headline">Saran</h2>
+        <p class="panel-sub">Lima arah pengembangan lanjutan untuk memperkuat sistem.</p>
+        <div class="panel-foot">TalentAchieve · 2026</div>
+      </div>
+      <div class="panel panel-white">
+        <div class="content-eyebrow">Pengembangan</div>
+        <h3 class="content-title">Rencana Pengembangan Selanjutnya</h3>
+        <div class="grid grid-3 fade-block" style="margin-bottom:14px;">
+          <div class="card"><div class="card-label">Perluasan Dataset</div><p>Data karyawan real dari sistem HRIS.</p></div>
+          <div class="card"><div class="card-label">Integrasi Real-Time</div><p>Terhubung dengan database HR existing.</p></div>
+          <div class="card"><div class="card-label">Advanced Analytics</div><p>Cohort analysis &amp; trend forecasting.</p></div>
+        </div>
+        <div class="grid grid-2 fade-block">
+          <div class="card"><div class="card-label">Model Optimization</div><p>Hyperparameter tuning &amp; experiment tracking.</p></div>
+          <div class="card"><div class="card-label">Offline Mode</div><p>Akses data tanpa koneksi internet.</p></div>
+        </div>
+        <div class="script-box fade-block">
+          <div class="script-label">Naskah Presenter</div>
+          <p>Ke depannya, kami mengusulkan lima pengembangan: memakai data HRIS asli, integrasi real-time, analitik lanjutan seperti cohort analysis, optimisasi model lewat hyperparameter tuning, dan mode offline.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 17: PENUTUP -->
+  <section class="slide">
+    <div class="cover-shell">
+      <div class="circle-mark fill-bright" style="width:340px;height:340px;bottom:-160px;left:-100px;opacity:.9;"></div>
+      <div class="circle-mark outline" style="width:150px;height:150px;top:70px;right:80px;"></div>
+      <div class="cover-mark">
+        <img src="assets/app_icon.png" alt="logo">
+      </div>
+      <h1 class="cover-title">Terima Kasih</h1>
+      <p class="cover-lead">Neural Collaborative Filtering · KPI · Employee Performance · Flutter · Firebase · Machine Learning · Mobile Application</p>
+      <div class="cover-authors">Tanya Jawab</div>
+      <div class="script-box on-dark fade-block" style="max-width:520px;">
+        <div class="script-label">Naskah Presenter</div>
+        <p>Sekian presentasi dari kami. Terima kasih atas perhatiannya, dan kami siap menerima pertanyaan.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let idx = 0;
+
+  slides.forEach(slide => {
+    slide.querySelectorAll('.fade-block').forEach((el,i) => {
+      el.style.animationDelay = (0.16 + i*0.07) + 's';
+    });
+  });
+
+  function render(){
+    slides.forEach((s,i) => s.classList.toggle('active', i === idx));
+    document.getElementById('counter').textContent = String(idx+1).padStart(2,'0') + ' / ' + total;
+    document.getElementById('progressFill').style.width = ((idx+1)/total*100) + '%';
+    document.getElementById('prevBtn').disabled = idx === 0;
+    document.getElementById('nextBtn').disabled = idx === total-1;
+  }
+
+  function goTo(i){ idx = Math.max(0, Math.min(total-1, i)); render(); }
+  function next(){ if(idx < total-1){ idx++; render(); } }
+  function prev(){ if(idx > 0){ idx--; render(); } }
+
+  document.getElementById('nextBtn').addEventListener('click', next);
+  document.getElementById('prevBtn').addEventListener('click', prev);
+
+  document.addEventListener('keydown', (e) => {
+    if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ e.preventDefault(); next(); }
+    if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+    if(e.key === 'Home'){ goTo(0); }
+    if(e.key === 'End'){ goTo(total-1); }
+    if(e.key === 'f' || e.key === 'F'){
+      if(!document.fullscreenElement){ document.documentElement.requestFullscreen().catch(()=>{}); }
+      else { document.exitFullscreen(); }
+    }
+  });
+
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if(Math.abs(dx) > 50){ dx < 0 ? next() : prev(); }
+  });
+
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+@startuml ClassDiagram
+skinparam class {
+  BackgroundColor #F5F5F5
+  BorderColor #1565C0
+  FontColor #0D1B2A
+  AttributeFontSize 11
+}
+skinparam classAttributeIconSize 0
+skinparam arrow {
+  Color #42A5F5
+  FontColor #0D1B2A
+}
+
+title Class Diagram - Talent Achieve
+
+abstract class User {
+  - uid : String
+  - email : String
+  - name : String
+  - role : UserRole
+  - createdAt : DateTime
+  + login() : void
+  + logout() : void
+  + updateProfile() : void
+}
+
+class Employee {
+  - employeeId : String
+  - department : String
+  - position : String
+  - phone : String
+  - avatarUrl : String
+  + getPerformanceData() : PerformanceData
+  + getNCFInsights() : NCFPrediction
+  + getPerformanceHistory() : List
+}
+
+class HRD {
+  - department : String
+  - position : String
+  + viewAllEmployees() : List
+  + createEmployee() : void
+  + deleteEmployee() : void
+  + uploadDataset() : void
+  + runPipeline() : void
+}
+
+class PerformanceData {
+  - employeeId : String
+  - tasksCompleted : int
+  - averageTaskQuality : double
+  - projectsLed : int
+  - clientSatisfactionScore : double
+  - hoursWorked : int
+  - deadlineMetScore : double
+  - innovationScore : double
+  - efficiencyScore : double
+  - meetingsAttended : int
+  - collaborationScore : double
+  - punctualityScore : double
+  - trainingHoursCompleted : double
+  - workEngagementScore : double
+  - peerInteractionScore : double
+  - initiativeScore : double
+  - taskFollowupScore : double
+  - speechSentimentScore : double
+  - speechEnergyLevel : double
+  - speechClarityScore : double
+  - toneConsistencyScore : double
+  - speakingSpeed : double
+  - pauseFrequency : double
+  - pitchVariation : double
+  - volumeStabilityScore : double
+  + toMap() : Map
+  + fromMap() : PerformanceData
+}
+
+class NCFPrediction {
+  - employeeId : String
+  - performanceRating : String
+  - overallScore : double
+  - probabilities : Map
+  - predictedAt : DateTime
+  + toMap() : Map
+  + fromMap() : NCFPrediction
+}
+
+class Dataset {
+  - datasetId : String
+  - fileName : String
+  - totalRecords : int
+  - uploadedAt : DateTime
+  - status : String
+  - processingSteps : List
+  + upload() : void
+  + process() : void
+  + getHistory() : List
+}
+
+enum UserRole {
+  HRD
+  EMPLOYEE
+}
+
+User <|-- Employee : inherits
+User <|-- HRD : inherits
+User --> UserRole
+
+Employee "1" *-- "Many" PerformanceData : has
+Employee "1" o-- "Many" NCFPrediction : produces
+HRD "1" o-- "Many" Dataset : manages
+Dataset "1" o-- "Many" NCFPrediction : generates
+
+@enduml

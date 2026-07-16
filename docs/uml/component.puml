@@ -1,0 +1,129 @@
+@startuml ComponentDiagram
+skinparam component {
+  BackgroundColor #F5F5F5
+  BorderColor #1565C0
+  FontColor #0D1B2A
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #42A5F5
+  FontColor #0D1B2A
+}
+skinparam database {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam cloud {
+  BackgroundColor #E8F5E9
+  BorderColor #4CAF50
+}
+skinparam arrow {
+  Color #42A5F5
+}
+
+title Component Diagram - Talent Achieve
+
+package "Presentation Layer\n(Flutter Mobile App)" as PL {
+
+  package "Auth Module" as AuthUI {
+    [Login Screen]
+    [Forgot Password Screen]
+  }
+
+  package "HRD Dashboard Module" as HRDUI {
+    [Executive Summary]
+    [Dataset Management]
+    [Leaderboard]
+    [Create Employee]
+    [HRD Settings]
+  }
+
+  package "Employee Dashboard Module" as EmpUI {
+    [Performance Hub]
+    [NCF Insights]
+    [Performance History]
+    [Employee Settings]
+  }
+
+  package "Employee Analysis Module" as AnalysisUI {
+    [Radar Chart View]
+    [PDF Export]
+  }
+
+  package "Profile Module" as ProfileUI {
+    [Edit Profile]
+    [Security]
+    [Help Center]
+  }
+}
+
+package "Business Logic Layer" as BLL {
+
+  package "BLoC State Management" as BLoC {
+    [AuthBloc]
+    [HRDBloc]
+    [EmployeeBloc]
+    [DatasetBloc]
+    [NCFInsightsBloc]
+  }
+
+  package "Repository Layer" as Repo {
+    [AuthRepository]
+    [EmployeeRepository]
+    [DatasetRepository]
+    [NCFRepository]
+  }
+
+  package "Flask REST API\n(ML Backend)" as Flask {
+    [Preprocessing API]
+    [Training API]
+    [Evaluation API]
+    [Prediction API]
+    [Dataset Upload API]
+  }
+}
+
+package "Data Layer" as DL {
+
+  cloud "Firebase Cloud" as Firebase {
+    database "Firebase\nAuthentication" as FireAuth
+    database "Cloud Firestore\n(NoSQL)" as Firestore
+  }
+
+  database "Saved Models\n(.h5, .pkl)" as Models
+}
+
+' Connections - Presentation to BLoC
+[Login Screen] --> [AuthBloc]
+[Executive Summary] --> [HRDBloc]
+[Dataset Management] --> [DatasetBloc]
+[Performance Hub] --> [EmployeeBloc]
+[NCF Insights] --> [NCFInsightsBloc]
+[Radar Chart View] --> [HRDBloc]
+[Edit Profile] --> [AuthBloc]
+
+' Connections - BLoC to Repository
+[AuthBloc] --> [AuthRepository]
+[HRDBloc] --> [EmployeeRepository]
+[EmployeeBloc] --> [EmployeeRepository]
+[DatasetBloc] --> [DatasetRepository]
+[NCFInsightsBloc] --> [NCFRepository]
+
+' Connections - Repository to Data
+[AuthRepository] --> FireAuth
+[EmployeeRepository] --> Firestore
+[DatasetRepository] --> Firestore
+
+' Connections - Repository to Flask API
+[DatasetRepository] --> [Preprocessing API]
+[DatasetRepository] --> [Training API]
+[DatasetRepository] --> [Prediction API]
+[NCFRepository] --> [Evaluation API]
+[NCFRepository] --> [Prediction API]
+
+' Flask to Models
+[Training API] --> Models
+[Evaluation API] --> Models
+[Prediction API] --> Models
+
+@enduml

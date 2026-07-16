@@ -1,0 +1,102 @@
+@startuml DeploymentDiagram
+skinparam node {
+  BackgroundColor #F5F5F5
+  BorderColor #1565C0
+  FontColor #0D1B2A
+}
+skinparam artifact {
+  BackgroundColor #E3F2FD
+  BorderColor #42A5F5
+  FontColor #0D1B2A
+}
+skinparam cloud {
+  BackgroundColor #E8F5E9
+  BorderColor #4CAF50
+  FontColor #0D1B2A
+}
+skinparam arrow {
+  Color #42A5F5
+  FontColor #0D1B2A
+}
+skinparam database {
+  BackgroundColor #FFF9C4
+  BorderColor #FFC107
+}
+
+title Deployment Diagram - Talent Achieve
+
+node "Mobile Device" as Mobile {
+  artifact "Flutter App\n(APK / IPA / Web)" as FlutterApp
+  artifact "BLoC\nState Management" as BlocArt
+  artifact "GoRouter\nNavigation" as RouterArt
+  artifact "SharedPreferences\n(Local Storage)" as SharedPref
+
+  FlutterApp --> BlocArt
+  FlutterApp --> RouterArt
+  FlutterApp --> SharedPref
+}
+
+cloud "Firebase Cloud" as Firebase {
+  node "Firebase Authentication" as AuthService {
+    artifact "Email/Password Auth" as AuthArt
+    artifact "Password Reset\n(OTP)" as ResetArt
+  }
+
+  node "Cloud Firestore" as FirestoreService {
+    database "users\nCollection" as UsersDB
+    database "predictions\nCollection" as PredDB
+    database "datasets\nCollection" as DatasetsDB
+  }
+
+  node "Firebase Hosting" as Hosting
+}
+
+node "ML Server" as MLServer {
+  artifact "Flask REST API\n(Python)" as FlaskArt
+  artifact "NCF Model\n(TensorFlow/Keras)" as NCFArt
+  artifact "Preprocessor\n(StandardScaler)" as PrepArt
+  artifact "Evaluator\n(sklearn)" as EvalArt
+
+  FlaskArt --> NCFArt
+  FlaskArt --> PrepArt
+  FlaskArt --> EvalArt
+}
+
+database "Saved Models" as SavedModels {
+  artifact "best_ncf_model.h5" as ModelFile
+  artifact "scaler.pkl" as ScalerFile
+  artifact "label_encoder.pkl" as EncoderFile
+}
+
+' Mobile to Firebase
+FlutterApp <-down-> AuthService : HTTPS\n(REST API)
+FlutterApp <-down-> FirestoreService : HTTPS\n(Realtime Query)
+
+' Mobile to ML Server
+FlutterApp <-right-> FlaskArt : HTTPS\n(REST API)
+
+' ML Server to SavedModels
+NCFArt -down-> SavedModels : Read/Write\n(.h5, .pkl)
+
+' Firestore internal
+UsersDB <-right-> PredDB
+PredDB <-right-> DatasetsDB
+
+note bottom of Mobile
+  Platform: Android / iOS / Web
+  Framework: Flutter 3.11.5
+  Language: Dart
+end note
+
+note bottom of Firebase
+  Project: kpi-project-kelompok-2
+  Services: Auth, Firestore, Hosting
+end note
+
+note bottom of MLServer
+  Runtime: Python 3.10+
+  Framework: Flask + TensorFlow
+  Port: 5000
+end note
+
+@enduml
